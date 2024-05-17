@@ -1,0 +1,19 @@
+<svg width="216" height="176" viewBox="0 0 216 176" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="mask0_594_2749" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="-120" y="-120" width="336" height="336">
+<rect width="336" height="336" transform="translate(-120 -120)" fill="url(#paint0_radial_594_2749)"/>
+</mask>
+<g mask="url(#mask0_594_2749)">
+<circle cx="48" cy="48" r="47.5" stroke="#EAECF0"/>
+<circle cx="48" cy="48" r="47.5" stroke="#EAECF0"/>
+<circle cx="48" cy="48" r="71.5" stroke="#EAECF0"/>
+<circle cx="48" cy="48" r="95.5" stroke="#EAECF0"/>
+</g>
+<path d="M24 48C24 34.7452 34.7452 24 48 24C61.2548 24 72 34.7452 72 48C72 61.2548 61.2548 72 48 72C34.7452 72 24 61.2548 24 48Z" fill="#FEE4E2"/>
+<path d="M40 43.9966C39.836 43.9924 39.7169 43.9829 39.6098 43.9616C38.8164 43.8038 38.1962 43.1836 38.0384 42.3902C38 42.197 38 41.9647 38 41.5C38 41.0353 38 40.803 38.0384 40.6098C38.1962 39.8164 38.8164 39.1962 39.6098 39.0384C39.803 39 40.0353 39 40.5 39H55.5C55.9647 39 56.197 39 56.3902 39.0384C57.1836 39.1962 57.8038 39.8164 57.9616 40.6098C58 40.803 58 41.0353 58 41.5C58 41.9647 58 42.197 57.9616 42.3902C57.8038 43.1836 57.1836 43.8038 56.3902 43.9616C56.2831 43.9829 56.164 43.9924 56 43.9966M46 49H50M40 44H56V52.2C56 53.8802 56 54.7202 55.673 55.362C55.3854 55.9265 54.9265 56.3854 54.362 56.673C53.7202 57 52.8802 57 51.2 57H44.8C43.1198 57 42.2798 57 41.638 56.673C41.0735 56.3854 40.6146 55.9265 40.327 55.362C40 54.7202 40 53.8802 40 52.2V44Z" stroke="#D92D20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<defs>
+<radialGradient id="paint0_radial_594_2749" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(168 168) rotate(90) scale(168 168)">
+<stop/>
+<stop offset="1" stop-opacity="0"/>
+</radialGradient>
+</defs>
+</svg>
