@@ -1,6 +1,4 @@
 import { useSession } from '@/hooks/useSession';
-import { UPDATE_THEME_PREFERENCE } from '@/utils/mutations';
-import { useMutation } from '@apollo/client';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/router';
 import React, { MouseEventHandler, useEffect, useRef, useState } from 'react';
@@ -12,6 +10,7 @@ import { Individual } from './Icons/Individual';
 import { LightTheme } from './Icons/LightTheme';
 import { SettingsWorkspace } from './Icons/SettingsWorkspace';
 import { SystemTheme } from './Icons/SystemTheme';
+import { openDB, updateUserThemePreference } from '@/utils/indexedDB';
 
 interface SettingsCardProps {
   isCollapsed: boolean;
@@ -66,24 +65,17 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
 
   const ref = useRef<HTMLDivElement>(null);
 
-  const [updateThemePreference] = useMutation(UPDATE_THEME_PREFERENCE, {
-    onCompleted: (data) => {
-      updateSessionInfo(
-        session.institutionName,
-        data.updateThemePreference.themePreference
-      );
-    },
-  });
-
-  const handleThemeChange = (themePreference: ThemePreference) => {
+  const handleThemeChange = async (themePreference: ThemePreference) => {
     setTheme(themePreference.toLowerCase());
     updateSessionInfo(session.institutionName, themePreference);
 
-    updateThemePreference({ variables: { themePreference } })
-      .then((response) => {})
-      .catch((error) => {
-        console.error('Failed to update theme:', error);
-      });
+    try {
+      const db = await openDB();
+      await updateUserThemePreference(db, session.email, themePreference);
+      console.log('Theme preference updated successfully');
+    } catch (error) {
+      console.error('Failed to update theme preference:', error);
+    }
   };
 
   const toggleOpen: MouseEventHandler<HTMLDivElement> = (e) => {
@@ -130,7 +122,7 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
       {isOpen && (
         <>
           <div
-            className={`absolute transform -translate-y-full -translate-x-1/2  top-[-4px] ${
+            className={`absolute transform -translate-y-full -translate-x-1/2 top-[-4px] ${
               isCollapsed ? 'right-[-115px]' : 'right-[-265px]'
             } max-w-[208px] w-[208px] min-w-[208px] rounded-md shadow-lg border border-gray-light-300 dark:border-gray-dark-700 bg-white dark:bg-gray-dark-950 z-50`}
             onClick={() => router.push('/settings/security')}
@@ -243,18 +235,16 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
                 className="w-full text-left px-4 py-3 body-small-medium text-gray-light-700 dark:text-gray-dark-300 hover:bg-gray-light-50 rounded-b-md dark:hover:bg-gray-dark-800 flex items-center gap-1 cursor-pointer"
               >
                 <div className="flex w-full justify-between">
-                  <div className="flex">
-                    <SystemTheme
-                      className="stroke-gray-light-600 dark:stroke-gray-dark-400"
-                      width="24"
-                      height="24"
-                    />
-                    <span>System Default</span>
-                  </div>
-                  {resolvedTheme === 'system' && (
-                    <Check className="w-4 h-4 stroke-primary-600 dark:stroke-primary-500" />
-                  )}
+                  <SystemTheme
+                    className="stroke-gray-light-600 dark:stroke-gray-dark-400"
+                    width="24"
+                    height="24"
+                  />
+                  <span>System Default</span>
                 </div>
+                {resolvedTheme === 'system' && (
+                  <Check className="w-4 h-4 stroke-primary-600 dark:stroke-primary-500" />
+                )}
               </div>
             </div>
           )}

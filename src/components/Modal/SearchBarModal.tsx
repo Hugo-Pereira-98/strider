@@ -1,4 +1,3 @@
-import { useOrganization } from '@/hooks/useOrganization';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -11,7 +10,6 @@ import { CornerDownLeft } from '../Icons/CornerDownLeft';
 import { Search } from '../Icons/Search';
 import { UserPlus } from '../Icons/UserPlus';
 import Button from '../ui/Button';
-import { RequestCompanyModal } from './RequestCompanyModal';
 
 interface IRecentCompany {
   name: string;
@@ -84,7 +82,7 @@ export function SearchBarModal({ open, onClose }: SearchBarModalProps) {
     'River',
   ];
 
-  const { organizations } = useOrganization();
+  const organizations = [] as any;
 
   const [recentCompanies, setRecentCompanies] = useState<IRecentCompany[]>([]);
 
@@ -437,35 +435,6 @@ export function SearchBarModal({ open, onClose }: SearchBarModalProps) {
                         {action.icon}
                         {action.title}
                       </div>
-                      <div
-                        className={`flex items-center text-gray-light-500 dark:text-gray-dark-400`}
-                        style={{ minWidth: '6rem' }}
-                      >
-                        {isCreateIndication && (
-                          <>
-                            {/* <div className="rounded-md p-[6px] border border-gray-light-200 dark:border-gray-dark-800 w-fit leading-none">
-                                C
-                              </div>
-                              <span> then </span>
-                              <ArrowRight className="stroke-gray-light-600 dark:stroke-gray-dark-400" />
-                              <div className="rounded-md p-[6px] border border-gray-light-200 dark:border-gray-dark-800 w-fit leading-none">
-                                I
-                              </div> */}
-                          </>
-                        )}
-                        {isInviteColleagues && (
-                          <>
-                            {/* <div className="rounded-md p-[6px] border border-gray-light-200 dark:border-gray-dark-800 w-fit leading-none">
-                                G
-                              </div>
-                              <span> then </span>
-                              <ArrowRight className="stroke-gray-light-600 dark:stroke-gray-dark-400" />
-                              <div className="rounded-md p-[6px] border border-gray-light-200 dark:border-gray-dark-800 w-fit leading-none">
-                                T
-                              </div> */}
-                          </>
-                        )}
-                      </div>
                     </button>
                   );
                 })}
@@ -562,13 +531,6 @@ export function SearchBarModal({ open, onClose }: SearchBarModalProps) {
         className="fixed inset-0 bg-gray-light-950/70 dark:bg-gray-dark-800/70 backdrop-blur-sm"
         onClick={onClose}
       />
-      {modalOpen && (
-        <RequestCompanyModal
-          companyName={inputSearchText}
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
-        />
-      )}
     </div>
   );
 }

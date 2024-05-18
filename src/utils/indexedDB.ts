@@ -37,10 +37,7 @@ export function openDB(): Promise<any> {
 }
 
 export function addUser(db: any, user: any): Promise<void> {
-  console.log('Attempting to add user:', user);
   if (db === inMemoryDB) {
-    // Use in-memory store
-    console.log('Adding user to in-memory DB');
     db[STORE_NAME].push(user);
     return Promise.resolve();
   }
@@ -51,7 +48,6 @@ export function addUser(db: any, user: any): Promise<void> {
     const request = store.add(user);
 
     request.onsuccess = () => {
-      console.log('User added to IndexedDB');
       resolve();
     };
 
@@ -66,10 +62,7 @@ export function addUser(db: any, user: any): Promise<void> {
 }
 
 export function getUsers(db: any): Promise<any[]> {
-  console.log('Fetching users from db:', db);
   if (db === inMemoryDB) {
-    // Use in-memory store
-    console.log('Getting users from in-memory DB');
     return Promise.resolve(db[STORE_NAME]);
   }
 
@@ -79,7 +72,6 @@ export function getUsers(db: any): Promise<any[]> {
     const request = store.getAll();
 
     request.onsuccess = () => {
-      console.log('Users fetched from IndexedDB');
       resolve(request.result);
     };
 
@@ -91,6 +83,52 @@ export function getUsers(db: any): Promise<any[]> {
       reject(
         `IndexedDB get users error: ${(event.target as IDBRequest).error}`
       );
+    };
+  });
+}
+
+export function updateUserThemePreference(
+  db: any,
+  email: string,
+  themePreference: string
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.get(email);
+
+    request.onsuccess = () => {
+      const user = request.result;
+      if (user) {
+        user.themePreference = themePreference;
+        const updateRequest = store.put(user);
+
+        updateRequest.onsuccess = () => {
+          resolve();
+        };
+
+        updateRequest.onerror = (event: any) => {
+          console.error(
+            'IndexedDB update user theme preference error:',
+            (event.target as IDBRequest).error
+          );
+          reject(
+            `IndexedDB update user theme preference error: ${
+              (event.target as IDBRequest).error
+            }`
+          );
+        };
+      } else {
+        reject('User not found');
+      }
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB get user error:',
+        (event.target as IDBRequest).error
+      );
+      reject(`IndexedDB get user error: ${(event.target as IDBRequest).error}`);
     };
   });
 }

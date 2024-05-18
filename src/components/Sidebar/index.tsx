@@ -1,8 +1,3 @@
-import {
-  FIND_INDICATIONS_QUERY,
-  FIND_INSTITUTION_MEMBER_BY_ID,
-} from '@/utils/queries';
-import { useQuery } from '@apollo/client';
 import classNames from 'classnames';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
@@ -32,27 +27,6 @@ export function Sidebar() {
     useSidebar();
 
   const { session, updateSessionInfo } = useSession();
-  const { data: indicationsData } = useQuery(FIND_INDICATIONS_QUERY, {});
-
-  const indications = useMemo(
-    () =>
-      indicationsData
-        ? indicationsData.findIndicationsByInstitutionMemberId
-        : [],
-    [indicationsData]
-  );
-
-  const { data } = useQuery(FIND_INSTITUTION_MEMBER_BY_ID, {
-    skip: session?.institutionName && session?.themePreference,
-  });
-
-  useEffect(() => {
-    const storedTheme = session?.themePreference?.toLowerCase();
-    if (data && !session?.institutionName && !session?.themePreference) {
-      const { institution } = data.findInstitutionMemberById;
-      updateSessionInfo(institution.name, storedTheme);
-    }
-  }, [data, session, updateSessionInfo]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -180,15 +154,7 @@ export function Sidebar() {
                     title="Markets"
                   />
                 </li>
-                <li>
-                  <SidebarLink
-                    openSidebar={isCollapsed}
-                    href="/indications"
-                    icon={Activity}
-                    title="Indications"
-                    badgeNumber={indications?.length}
-                  />
-                </li>
+
                 <li>
                   <SidebarLink
                     openSidebar={isCollapsed}
