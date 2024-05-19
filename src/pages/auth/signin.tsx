@@ -96,7 +96,7 @@ export default function SignIn() {
     }
   };
 
-  const idCookie = getCookie('strider-id');
+  const idCookie = getCookie('posterr-id');
   if (idCookie) {
     router.push('/feed');
   }
@@ -104,7 +104,7 @@ export default function SignIn() {
   return (
     <Container className="max-w-xl space-y-8 pt-12 md:pt-24 bg-[url(/assets/auth-bg-pattern.svg)] dark:bg-[url(/assets/auth-bg-pattern-dark.svg)] bg-[center_top] bg-no-repeat">
       <Head>
-        <title>Gondola | Sign in</title>
+        <title>Posterr | Sign in</title>
       </Head>
 
       <header className="flex flex-col items-center">
@@ -112,7 +112,7 @@ export default function SignIn() {
           <Atom className="fill-gray-light-700 dark:fill-gray-dark-300" />
         </FeaturedIcon>
         <h1 className="heading-extra-small-semibold md:heading-small-semibold text-gray-light-950 dark:text-gray-dark-50 mb-3 mt-6">
-          Sign in to Gondola
+          Sign in to Posterr
         </h1>
         <h2 className="body-medium-regular text-gray-light-600 dark:text-gray-dark-400">
           Access your private market concierge

@@ -22,9 +22,9 @@ export const SidebarProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const gondolaId = Cookies.get('strider-id');
-    if (gondolaId) {
-      const session = JSON.parse(gondolaId);
+    const posterrID = Cookies.get('posterr-id');
+    if (posterrID) {
+      const session = JSON.parse(posterrID);
       if (session?.sidebarCollapsed !== undefined) {
         setIsCollapsed(session?.sidebarCollapsed);
       }

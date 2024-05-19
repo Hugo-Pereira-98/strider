@@ -24,7 +24,7 @@ export const handler = (req: NextApiRequest, res: NextApiResponse) => {
       name: `${firstName} ${lastName}`,
       sidebarCollapsed: true,
     };
-    setCookie('strider-id', JSON.stringify(userIdData), {
+    setCookie('posterr-id', JSON.stringify(userIdData), {
       req,
       res,
       expires: new Date(Date.now() + refreshExpiresIn * 1000),
@@ -35,7 +35,7 @@ export const handler = (req: NextApiRequest, res: NextApiResponse) => {
       token: fakeToken,
       expiresAt: Math.floor(Date.now() / 1000) + refreshExpiresIn,
     };
-    setCookie('strider-refresh', JSON.stringify(refreshTokenData), {
+    setCookie('posterr-refresh', JSON.stringify(refreshTokenData), {
       req,
       res,
       expires: new Date(Date.now() + refreshExpiresIn * 1000),
@@ -47,7 +47,7 @@ export const handler = (req: NextApiRequest, res: NextApiResponse) => {
       token: fakeToken,
       expiresAt: Math.floor(Date.now() / 1000) + accessExpiresIn,
     };
-    setCookie('strider-access', JSON.stringify(accessTokenData), {
+    setCookie('posterr-access', JSON.stringify(accessTokenData), {
       req,
       res,
       expires: new Date(Date.now() + accessExpiresIn * 1000),

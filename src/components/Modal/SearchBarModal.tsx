@@ -129,15 +129,6 @@ export function SearchBarModal({ open, onClose }: SearchBarModalProps) {
   }, [recentCompanies, inputSearchText]);
 
   useEffect(() => {
-    const storedRecentCompanies = localStorage.getItem(
-      'gondola-recentCompanies'
-    );
-    if (storedRecentCompanies) {
-      setRecentCompanies(JSON.parse(storedRecentCompanies));
-    }
-  }, []);
-
-  useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchText(searchText);
     }, 300);

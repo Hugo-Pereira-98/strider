@@ -1,7 +1,7 @@
 import { setCookie } from 'cookies-next';
 import jwt from 'jsonwebtoken';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { openDB, addUser, getUsers } from '../../../utils/indexedDB';
+import { openDB, createUser, getUsers } from '../../../utils/indexedDB';
 
 export const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') {
@@ -9,45 +9,37 @@ export const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   const { email, password, firstName, lastName } = req.body;
+  const emailLowerCase = email.toLowerCase();
 
   try {
     const db = await openDB();
-
     const users = await getUsers(db);
 
-    const existingUser = users.find((user) => user.email === email);
+    const existingUser = users.find((user) => user.email === emailLowerCase);
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    const newUser = {
-      email: email.toLowerCase(),
-      firstName,
-      lastName,
-      password: Buffer.from(password).toString('base64'),
-      themePreference: 'system',
-    };
-
-    await addUser(db, newUser);
+    await createUser(db, firstName, lastName, emailLowerCase, password);
 
     const fakeToken = jwt.sign(
       {
-        email: newUser.email,
-        name: `${newUser.firstName} ${newUser.lastName}`,
+        email: emailLowerCase,
+        name: `${firstName} ${lastName}`,
       },
-      process.env.AUTH0_CLIENT_SECRET!,
+      process.env.NEXT_PUBLIC_AUTH0_CLIENT_SECRET!,
       { expiresIn: '1h' }
     );
 
-    const refreshExpiresIn = 30 * 24 * 60 * 60;
-    const accessExpiresIn = 60 * 60;
+    const refreshExpiresIn = 30 * 24 * 60 * 60; // 30 days
+    const accessExpiresIn = 60 * 60; // 1 hour
 
     const userIdData = {
-      email: newUser.email,
-      name: `${newUser.firstName} ${newUser.lastName}`,
+      email: emailLowerCase,
+      name: `${firstName} ${lastName}`,
       sidebarCollapsed: true,
     };
-    setCookie('strider-id', JSON.stringify(userIdData), {
+    setCookie('posterr-id', JSON.stringify(userIdData), {
       req,
       res,
       expires: new Date(Date.now() + refreshExpiresIn * 1000),
@@ -58,7 +50,7 @@ export const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       token: fakeToken,
       expiresAt: Math.floor(Date.now() / 1000) + refreshExpiresIn,
     };
-    setCookie('strider-refresh', JSON.stringify(refreshTokenData), {
+    setCookie('posterr-refresh', JSON.stringify(refreshTokenData), {
       req,
       res,
       expires: new Date(Date.now() + refreshExpiresIn * 1000),
@@ -70,7 +62,7 @@ export const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       token: fakeToken,
       expiresAt: Math.floor(Date.now() / 1000) + accessExpiresIn,
     };
-    setCookie('strider-access', JSON.stringify(accessTokenData), {
+    setCookie('posterr-access', JSON.stringify(accessTokenData), {
       req,
       res,
       expires: new Date(Date.now() + accessExpiresIn * 1000),

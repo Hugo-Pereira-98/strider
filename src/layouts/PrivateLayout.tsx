@@ -11,7 +11,7 @@ export function PrivateLayout({ children }: PrivateLayoutProps) {
   const router = useRouter();
 
   useEffect(() => {
-    const idCookie = getCookie('strider-id');
+    const idCookie = getCookie('posterr-id');
 
     if (!idCookie && !router.pathname.startsWith('/auth')) {
       clearStorage();

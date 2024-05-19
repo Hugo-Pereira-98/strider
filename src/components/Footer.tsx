@@ -9,7 +9,7 @@ export function Footer() {
         <li>Privacy</li>
       </ul>
 
-      <span>&copy; {new Date().getFullYear()} Gondola Technologies, Inc.</span>
+      <span>&copy; {new Date().getFullYear()} Posterr Technologies, Inc.</span>
     </footer>
   );
 }

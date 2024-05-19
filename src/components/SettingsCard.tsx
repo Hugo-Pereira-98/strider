@@ -10,7 +10,7 @@ import { Individual } from './Icons/Individual';
 import { LightTheme } from './Icons/LightTheme';
 import { SettingsWorkspace } from './Icons/SettingsWorkspace';
 import { SystemTheme } from './Icons/SystemTheme';
-import { openDB, updateUserThemePreference } from '@/utils/indexedDB';
+import { openDB, getUsers, updateUserThemePreference } from '@/utils/indexedDB';
 
 interface SettingsCardProps {
   isCollapsed: boolean;
@@ -62,17 +62,18 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isThemeOpen, setIsThemeOpen] = useState(false);
   const { updateSessionInfo, signOut } = useSession();
-
+  const [currentThemePreference, setCurrentThemePreference] =
+    useState<ThemePreference>('SYSTEM');
   const ref = useRef<HTMLDivElement>(null);
 
   const handleThemeChange = async (themePreference: ThemePreference) => {
     setTheme(themePreference.toLowerCase());
-    updateSessionInfo(session.institutionName, themePreference);
+    updateSessionInfo(session?.institutionName, themePreference);
 
     try {
       const db = await openDB();
-      await updateUserThemePreference(db, session.email, themePreference);
-      console.log('Theme preference updated successfully');
+      await updateUserThemePreference(db, session?.email, themePreference);
+      setCurrentThemePreference(themePreference);
     } catch (error) {
       console.error('Failed to update theme preference:', error);
     }
@@ -82,6 +83,23 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
     e.stopPropagation();
     setIsOpen(!isOpen);
   };
+
+  useEffect(() => {
+    const loadThemePreference = async () => {
+      try {
+        const db = await openDB();
+        const users = await getUsers(db);
+        const currentUser = users.find((user) => user.email === session?.email);
+        if (currentUser) {
+          setCurrentThemePreference(currentUser.themePreference);
+        }
+      } catch (error) {
+        console.error('Failed to load theme preference:', error);
+      }
+    };
+
+    loadThemePreference();
+  }, [session?.email]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -206,7 +224,7 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
                     />
                     <span>Dark</span>
                   </div>
-                  {resolvedTheme === 'dark' && (
+                  {currentThemePreference === 'DARK' && (
                     <Check className="w-4 h-4 stroke-primary-600 dark:stroke-primary-500" />
                   )}
                 </div>
@@ -225,24 +243,26 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
                     />
                     <span>Light</span>
                   </div>
-                  {resolvedTheme === 'light' && (
+                  {currentThemePreference === 'LIGHT' && (
                     <Check className="w-4 h-4 stroke-primary-600 dark:stroke-primary-500" />
                   )}
                 </div>
               </div>
               <div
                 onClick={() => handleThemeChange('SYSTEM')}
-                className="w-full text-left px-4 py-3 body-small-medium text-gray-light-700 dark:text-gray-dark-300 hover:bg-gray-light-50 rounded-b-md dark:hover:bg-gray-dark-800 flex items-center gap-1 cursor-pointer"
+                className="w-full text-left px-4 py-3 body-small-medium text-gray-light-700 dark:text-gray-dark-300 hover:bg-gray-light-50 dark:hover:bg-gray-dark-800 flex items-center gap-1 cursor-pointer"
               >
                 <div className="flex w-full justify-between">
-                  <SystemTheme
-                    className="stroke-gray-light-600 dark:stroke-gray-dark-400"
-                    width="24"
-                    height="24"
-                  />
-                  <span>System Default</span>
+                  <div className="flex">
+                    <SystemTheme
+                      className="stroke-gray-light-600 dark:stroke-gray-dark-400"
+                      width="24"
+                      height="24"
+                    />
+                    <span>System Default</span>
+                  </div>
                 </div>
-                {resolvedTheme === 'system' && (
+                {currentThemePreference === 'SYSTEM' && (
                   <Check className="w-4 h-4 stroke-primary-600 dark:stroke-primary-500" />
                 )}
               </div>

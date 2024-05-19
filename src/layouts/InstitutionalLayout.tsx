@@ -1,5 +1,5 @@
 import { AlignLeft } from '@/components/Icons/AlignLeft';
-import { GondolaLogo } from '@/components/Icons/GondolaLogo';
+import { PosterrLogo } from '@/components/Icons/PosterrLogo';
 import { Sidebar } from '@/components/Sidebar';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import { SelectDown } from '@/components/ui/SelectDown';
@@ -51,7 +51,7 @@ export function InstitutionalLayout({
       <div className="relative flex flex-1 flex-col 2xl:items-center">
         <div className="2xl:hidden border-b border-gray-light-200 dark:border-gray-dark-800 pb-4 flex items-center justify-between p-6 sm:p-8">
           <Link href="/indications">
-            <GondolaLogo className="fill-gray-light-900 dark:fill-gray-dark-300" />
+            <PosterrLogo className="fill-gray-light-900 dark:fill-gray-dark-300" />
           </Link>
 
           <button type="button" onClick={() => setSidebarOpen(true)}>

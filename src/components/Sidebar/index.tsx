@@ -8,8 +8,8 @@ import { Activity } from '../Icons/Activity';
 import { Building2 } from '../Icons/Building2';
 import { Candlestick } from '../Icons/Candlestick';
 import { ChevronRight } from '../Icons/ChevronRight';
-import { Gondola } from '../Icons/Gondola';
-import { GondolaLogo } from '../Icons/GondolaLogo';
+import { Posterr } from '../Icons/Posterr';
+import { PosterrLogo } from '../Icons/PosterrLogo';
 import { LineChartUp } from '../Icons/LineChartUp';
 import { SearchBarModal } from '../Modal/SearchBarModal';
 import SettingsCard from '../SettingsCard';
@@ -130,9 +130,9 @@ export function Sidebar() {
         >
           <Link href="/indications">
             {isCollapsed ? (
-              <GondolaLogo className="fill-gray-light-900 dark:fill-white" />
+              <PosterrLogo className="fill-gray-light-900 dark:fill-white" />
             ) : (
-              <Gondola className="fill-gray-light-900 dark:fill-white" />
+              <Posterr className="fill-gray-light-900 dark:fill-white" />
             )}
           </Link>
         </div>
@@ -174,8 +174,6 @@ export function Sidebar() {
                 </li>
               </ul>
             </div>
-
-            {/* <ThemeToggle /> */}
 
             <div
               className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-full ${

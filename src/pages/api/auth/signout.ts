@@ -3,9 +3,9 @@ import { deleteCookie } from 'cookies-next';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    deleteCookie('strider-access', { req, res, path: '/' });
-    deleteCookie('strider-refresh', { req, res, path: '/' });
-    deleteCookie('strider-id', { req, res, path: '/' });
+    deleteCookie('posterr-access', { req, res, path: '/' });
+    deleteCookie('posterr-refresh', { req, res, path: '/' });
+    deleteCookie('posterr-id', { req, res, path: '/' });
 
     res.status(200).json({ message: 'Successfully signed out' });
   } else {

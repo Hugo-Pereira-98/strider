@@ -22,9 +22,9 @@ export default function App({ Component, pageProps }: AppProps) {
       : Fragment;
 
   useEffect(() => {
-    const gondolaIdCookie = Cookies.get('strider-id');
-    if (gondolaIdCookie) {
-      const session = JSON.parse(gondolaIdCookie);
+    const posterrIdCookie = Cookies.get('posterr-id');
+    if (posterrIdCookie) {
+      const session = JSON.parse(posterrIdCookie);
       const themePreference = session.themePreference?.toLowerCase();
       if (
         themePreference === 'dark' ||
@@ -44,7 +44,6 @@ export default function App({ Component, pageProps }: AppProps) {
       />
       <SessionProvider>
         <ThemeProvider enableSystem={true} attribute="class">
-          {/* <InstitutionMemberContextProvider> */}
           <SidebarProvider>
             <main className={`${inter.className} h-screen`}>
               <PrivateLayoutContainer>
@@ -54,7 +53,6 @@ export default function App({ Component, pageProps }: AppProps) {
               </PrivateLayoutContainer>
             </main>
           </SidebarProvider>
-          {/* </InstitutionMemberContextProvider> */}
         </ThemeProvider>
       </SessionProvider>
     </>

@@ -74,7 +74,7 @@ export default function ForgotPassword() {
   return (
     <Container className="max-w-2xl space-y-12 pt-12 border-l border-neutral-100 dark:border-neutral-800  h-screen after:border after:border-primary-600 after:absolute after:top-10 after:left-0 after:h-20 relative">
       <Head>
-        <title>Gondola | Forgot Password</title>
+        <title>Posterr | Forgot Password</title>
       </Head>
 
       <header>
@@ -109,24 +109,6 @@ export default function ForgotPassword() {
         </Form>
       </FormProvider>
 
-      <footer className="space-x-12">
-        <Link
-          href="gondolamarkets.com/legal/terms"
-          className="body-small-regular text-neutral-400"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Terms of Use
-        </Link>
-        <Link
-          href="gondolamarkets.com/legal/privacy"
-          className="body-small-regular text-neutral-400"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Privacy
-        </Link>
-      </footer>
       {showAlert && (
         <Alert
           headLineText="Email has been sent."

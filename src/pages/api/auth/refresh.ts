@@ -7,16 +7,16 @@ export default async function refresh(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const refreshTokenDataString = getCookie('strider-refresh', { req, res });
+  const refreshTokenDataString = getCookie('posterr-refresh', { req, res });
 
   const refreshTokenData = refreshTokenDataString
     ? JSON.parse(refreshTokenDataString as string)
     : null;
 
   if (!refreshTokenData || !refreshTokenData.token) {
-    deleteCookie('strider-access', { req, res, path: '/' });
-    deleteCookie('strider-refresh', { req, res, path: '/' });
-    deleteCookie('strider-id', { req, res, path: '/' });
+    deleteCookie('posterr-access', { req, res, path: '/' });
+    deleteCookie('posterr-refresh', { req, res, path: '/' });
+    deleteCookie('posterr-id', { req, res, path: '/' });
     return res
       .status(401)
       .json({ error: 'No refresh token provided', redirectTo: '/auth/signin' });
@@ -45,7 +45,7 @@ export default async function refresh(
     const accessTokenExpires = new Date(decodedAccessToken.exp * 1000);
 
     setCookie(
-      'strider-access',
+      'posterr-access',
       JSON.stringify({
         token: newTokens.access_token,
         expiresAt: decodedAccessToken.exp,
@@ -61,7 +61,7 @@ export default async function refresh(
     if (newTokens.refresh_token) {
       const refreshExpiresIn = 30 * 24 * 60 * 60; // 30 days in seconds
       setCookie(
-        'strider-refresh',
+        'posterr-refresh',
         JSON.stringify({
           token: newTokens.refresh_token,
           expiresAt: Math.floor(Date.now() / 1000) + refreshExpiresIn,
@@ -75,9 +75,9 @@ export default async function refresh(
         }
       );
 
-      const gondolaIdDataString = getCookie('strider-id', { req, res });
-      if (gondolaIdDataString) {
-        setCookie('strider-id', gondolaIdDataString, {
+      const posterrIdDataString = getCookie('posterr-id', { req, res });
+      if (posterrIdDataString) {
+        setCookie('posterr-id', posterrIdDataString, {
           req,
           res,
           expires: new Date(Date.now() + refreshExpiresIn * 1000),
@@ -88,9 +88,9 @@ export default async function refresh(
 
     res.status(200).json({ ok: true });
   } catch (error) {
-    deleteCookie('strider-access', { req, res, path: '/' });
-    deleteCookie('strider-refresh', { req, res, path: '/' });
-    deleteCookie('strider-id', { req, res, path: '/' });
+    deleteCookie('posterr-access', { req, res, path: '/' });
+    deleteCookie('posterr-refresh', { req, res, path: '/' });
+    deleteCookie('posterr-id', { req, res, path: '/' });
     res
       .status(500)
       .json({ error: 'Failed to refresh token', redirectTo: '/auth/signin' });

@@ -72,8 +72,8 @@ export function useSession(): SessionProps {
       themePreference?: string,
       sidebarCollapsed?: boolean
     ) => {
-      const currentSession = getCookie('strider-id')
-        ? JSON.parse(getCookie('strider-id') as string)
+      const currentSession = getCookie('posterr-id')
+        ? JSON.parse(getCookie('posterr-id') as string)
         : null;
 
       if (currentSession) {
@@ -88,7 +88,7 @@ export function useSession(): SessionProps {
         };
 
         setSession(updatedSession);
-        setCookie('strider-id', JSON.stringify(updatedSession), { path: '/' });
+        setCookie('posterr-id', JSON.stringify(updatedSession), { path: '/' });
       }
     },
     []
@@ -151,7 +151,7 @@ export function useSession(): SessionProps {
   }, [signOut]);
 
   useEffect(() => {
-    const cookies = getCookie('strider-id');
+    const cookies = getCookie('posterr-id');
 
     if (cookies) {
       setSession(JSON.parse(cookies as string));

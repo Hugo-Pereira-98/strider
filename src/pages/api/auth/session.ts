@@ -5,7 +5,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const refreshTokenDataString = getCookie('strider-refresh', { req, res });
+  const refreshTokenDataString = getCookie('posterr-refresh', { req, res });
   const refreshTokenData = refreshTokenDataString
     ? JSON.parse(refreshTokenDataString as string)
     : null;

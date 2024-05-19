@@ -1,22 +1,19 @@
-import { useEffect, useState } from 'react';
-import { useForm, FormProvider } from 'react-hook-form';
-import { useRouter } from 'next/router';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { NextApiRequest, NextApiResponse } from 'next';
-import z from 'zod';
-import { openDB, addUser, getUsers } from '@/utils/indexedDB';
+import { FeaturedIcon } from '@/components/FeaturedIcon';
+import { Atom } from '@/components/Icons/Atom';
+import Button from '@/components/ui/Button';
 import { Container } from '@/components/ui/Container';
 import { Form } from '@/components/ui/Form';
 import InputField from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
-import CheckBox from '@/components/ui/Form/CheckBox';
-import Link from 'next/link';
-import { HiCheck, HiOutlineExclamationCircle } from 'react-icons/hi2';
-import classNames from 'classnames';
 import { useToast } from '@/hooks/useToast';
-import { FeaturedIcon } from '@/components/FeaturedIcon';
-import { Atom } from '@/components/Icons/Atom';
+import { createUser, getUsers, openDB } from '@/utils/indexedDB';
+import { zodResolver } from '@hookform/resolvers/zod';
+import classNames from 'classnames';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
+import { HiCheck, HiOutlineExclamationCircle } from 'react-icons/hi2';
+import z from 'zod';
 
 const signUpSchema = z.object({
   email: z.string().email(),
@@ -69,7 +66,7 @@ export default function SignUp() {
     register,
     handleSubmit,
     watch,
-    formState: { errors },
+    formState: { errors, isValid },
   } = methods;
 
   const email = watch('email');
@@ -78,17 +75,6 @@ export default function SignUp() {
   const last_name = watch('last_name');
   const acceptTerms = watch('acceptTerms');
 
-  const [allFieldsFilled, setAllFieldsFilled] = useState(false);
-
-  useEffect(() => {
-    const formValuesFilled = Boolean(
-      email && password && first_name && last_name && acceptTerms
-    );
-    const noErrors = Object.keys(errors).length === 0;
-
-    setAllFieldsFilled(formValuesFilled && noErrors);
-  }, [email, password, first_name, last_name, acceptTerms, errors]);
-
   const handleSignUp = async (values: SignUpForm) => {
     try {
       const db = await openDB();
@@ -96,7 +82,7 @@ export default function SignUp() {
       const users = await getUsers(db);
 
       const existingUser = users.find(
-        (user: any) => user.email === values.email
+        (user: any) => user.email === values.email.toLowerCase()
       );
       if (existingUser) {
         toast({
@@ -106,15 +92,27 @@ export default function SignUp() {
         return;
       }
 
-      const newUser = {
-        email: values.email,
-        firstName: values.first_name,
-        lastName: values.last_name,
-        password: Buffer.from(values.password).toString('base64'),
-        themePreference: 'system',
-      };
+      await createUser(
+        db,
+        values.first_name,
+        values.last_name,
+        values.email.toLowerCase(),
+        values.password
+      );
 
-      await addUser(db, newUser);
+      // Call your API to set cookies
+      await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: values.email.toLowerCase(),
+          password: values.password,
+          firstName: values.first_name,
+          lastName: values.last_name,
+        }),
+      });
 
       toast({
         title: 'Account created successfully',
@@ -144,7 +142,7 @@ export default function SignUp() {
   return (
     <Container className="max-w-xl space-y-8 pt-12 md:pt-24 bg-[url(/assets/auth-bg-pattern.svg)] dark:bg-[url(/assets/auth-bg-pattern-dark.svg)] bg-[center_top] bg-no-repeat">
       <Head>
-        <title>Gondola | Sign up</title>
+        <title>Posterr | Sign up</title>
       </Head>
 
       <header className="flex flex-col items-center">
@@ -155,7 +153,7 @@ export default function SignUp() {
           Create an account
         </h1>
         <h2 className="body-medium-regular text-gray-light-600 dark:text-gray-dark-400">
-          Welcome to Gondola
+          Welcome to Posterr
         </h2>
       </header>
 
@@ -260,53 +258,9 @@ export default function SignUp() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <CheckBox {...register('acceptTerms')} />
-            <label
-              htmlFor="acceptTerms"
-              className="body-small-regular text-gray-light-700 dark:text-gray-dark-300"
-            >
-              I agree to the{' '}
-              <Link
-                className="underline"
-                href="https://www.gondolamarkets.com/legal/terms"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link
-                className="underline"
-                href="https://www.gondolamarkets.com/legal/privacy"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Privacy Policy
-              </Link>
-              .
-            </label>
-          </div>
-
-          <Button
-            type="submit"
-            label="Get started"
-            disabled={!allFieldsFilled}
-          />
+          <Button type="submit" label="Get started" disabled={!isValid} />
         </Form>
       </FormProvider>
-
-      <footer className="text-center">
-        <span className="body-small-regular text-gray-light-600 dark:text-gray-dark-400">
-          Already have an account?
-        </span>{' '}
-        <Link
-          href="/auth/signin"
-          className="body-small-semibold text-primary-700 dark:text-gray-dark-300 hover:text-primary-800 dark:hover:text-gray-dark-100"
-        >
-          Log in
-        </Link>
-      </footer>
     </Container>
   );
 }

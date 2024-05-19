@@ -1,4 +1,4 @@
-export function GondolaLogo({ ...props }) {
+export function PosterrLogo({ ...props }) {
   return (
     <svg
       width="127"
