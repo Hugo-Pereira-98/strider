@@ -292,7 +292,7 @@ export async function populateDB(
         post.retweetFrom = {
           postId: randomPost.id!,
           postDate: randomPost.postDate,
-          post: randomPost.post,
+          post: randomPost.post ? randomPost.post : '',
           tagged: randomPost.tagged,
           userId: randomPost.userId,
           userName: users.find((u) => u.userId === randomPost.userId)!.userName,
