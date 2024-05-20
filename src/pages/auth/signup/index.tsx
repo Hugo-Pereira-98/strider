@@ -5,12 +5,7 @@ import { Container } from '@/components/ui/Container';
 import { Form } from '@/components/ui/Form';
 import InputField from '@/components/ui/Input';
 import { useToast } from '@/hooks/useToast';
-import {
-  createUser,
-  getUsers,
-  openDB,
-  createRandomFollowingsAndFollowers,
-} from '@/utils/indexedDB';
+import { createUser, getUsers, openDB } from '@/utils/indexedDB';
 import { zodResolver } from '@hookform/resolvers/zod';
 import classNames from 'classnames';
 import Head from 'next/head';
@@ -97,10 +92,10 @@ export default function SignUp() {
         return;
       }
 
+      console.log('before createUser');
       await createUser(
         db,
-        values.first_name,
-        values.last_name,
+        values.first_name + ' ' + values.last_name,
         values.email.toLowerCase(),
         values.password
       );
@@ -117,8 +112,7 @@ export default function SignUp() {
           lastName: values.last_name,
         }),
       });
-
-      await createRandomFollowingsAndFollowers(db, values.email.toLowerCase());
+      console.log('after fetch');
 
       toast({
         title: 'Account created successfully',

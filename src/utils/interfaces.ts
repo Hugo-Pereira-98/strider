@@ -1,45 +1,33 @@
 export interface User {
+  userId: number;
+  userName: string;
   email: string;
-  firstName: string;
-  lastName: string;
   password: string;
+  dateJoined: Date;
   themePreference: string;
-}
-
-export interface Following {
-  id?: number;
-  following: string;
-  followed: string;
+  following: Pick<User, 'userId' | 'userName' | 'email'>[];
+  followers: Pick<User, 'userId' | 'userName' | 'email'>[];
 }
 
 export interface Post {
   id?: number;
-  email: string;
+  userId: number;
   post: string;
-  tagged: string[];
   postDate: Date;
-  retweets?: number;
-  likes?: number;
-}
-
-export interface Retweet {
-  id?: number;
-  userId: string;
-  postId: number;
-  retweetedDate: Date;
-}
-
-export interface Like {
-  id?: number;
-  userId: string;
-  postId: number;
-  likeDate: Date;
+  retweets: number[];
+  likes: number[];
+  retweetFrom?: number | null;
+  comments: Comment[];
+  tagged: Pick<User, 'userId' | 'userName' | 'email'>[];
 }
 
 export interface Comment {
-  id?: number;
-  userId: string;
-  postId: number;
+  id: number;
+  userId: number;
+  userName: string;
+  email: string;
   comment: string;
   commentDate: Date;
 }
+
+export type ThemePreference = 'LIGHT' | 'DARK' | 'SYSTEM';

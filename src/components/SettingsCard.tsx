@@ -91,7 +91,9 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
         const users = await getUsers(db);
         const currentUser = users.find((user) => user.email === session?.email);
         if (currentUser) {
-          setCurrentThemePreference(currentUser.themePreference);
+          setCurrentThemePreference(
+            currentUser.themePreference as ThemePreference
+          );
         }
       } catch (error) {
         console.error('Failed to load theme preference:', error);
@@ -127,6 +129,8 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
     e.stopPropagation();
     signOut();
   };
+
+  console.log('currentThemePreference', currentThemePreference);
 
   return (
     <div
@@ -174,7 +178,7 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
             >
               <div className="flex justify-between items-center w-full">
                 <div className="flex">
-                  <ThemeIcon theme={session?.themePreference || 'SYSTEM'} />
+                  <ThemeIcon theme={currentThemePreference} />
                   <span>Theme</span>
                 </div>
                 <div className="flex items-center gap-2 h-full">
@@ -261,10 +265,10 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
                     />
                     <span>System Default</span>
                   </div>
+                  {currentThemePreference === 'SYSTEM' && (
+                    <Check className="w-4 h-4 stroke-primary-600 dark:stroke-primary-500" />
+                  )}
                 </div>
-                {currentThemePreference === 'SYSTEM' && (
-                  <Check className="w-4 h-4 stroke-primary-600 dark:stroke-primary-500" />
-                )}
               </div>
             </div>
           )}

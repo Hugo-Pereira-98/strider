@@ -138,10 +138,10 @@ export default function Feed() {
                   <div>
                     <div className="flex items-center space-x-2">
                       <span className="font-bold text-gray-light-900 dark:text-white">
-                        {user.firstName} {user.lastName}
+                        {user.userName}
                       </span>
                       <span className="text-gray-light-500 dark:text-gray-dark-400">
-                        @{post.email.split('@')[0]}
+                        @{user.email.split('@')[0]}
                       </span>
                     </div>
                     <span className="text-gray-light-400 dark:text-gray-dark-500 text-sm">

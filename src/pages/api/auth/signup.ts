@@ -1,31 +1,26 @@
 import { setCookie } from 'cookies-next';
 import jwt from 'jsonwebtoken';
 import { NextApiRequest, NextApiResponse } from 'next';
-import {
-  openDB,
-  createUser,
-  getUsers,
-  createRandomFollowingsAndFollowers,
-} from '../../../utils/indexedDB';
+import { getUsers, openDB } from '../../../utils/indexedDB';
 
 export const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') {
     return res.status(405).end();
   }
 
-  const { email, password, firstName, lastName } = req.body;
+  const { email, firstName, lastName } = req.body;
   const emailLowerCase = email.toLowerCase();
 
   try {
     const db = await openDB();
     const users = await getUsers(db);
+    console.log(0);
 
     const existingUser = users.find((user) => user.email === emailLowerCase);
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
-
-    await createUser(db, firstName, lastName, emailLowerCase, password);
+    console.log(1);
 
     const fakeToken = jwt.sign(
       {
@@ -35,6 +30,7 @@ export const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       process.env.NEXT_PUBLIC_AUTH0_CLIENT_SECRET!,
       { expiresIn: '1h' }
     );
+    console.log(2);
 
     const refreshExpiresIn = 30 * 24 * 60 * 60;
     const accessExpiresIn = 60 * 60;

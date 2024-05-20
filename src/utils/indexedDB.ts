@@ -1,21 +1,10 @@
 const DB_NAME = 'posterr-db';
 const DB_VERSION = 1;
-import {
-  Following,
-  Post,
-  User,
-  Retweet,
-  Like,
-  Comment,
-} from '@/utils/interfaces';
+import { Post, User, Comment, ThemePreference } from '@/utils/interfaces';
 
 const STORE_NAMES = {
   users: 'users',
-  following: 'following',
   posts: 'posts',
-  retweets: 'retweets',
-  likes: 'likes',
-  comments: 'comments',
 };
 
 import {
@@ -27,11 +16,7 @@ import {
 
 const inMemoryDB: { [key: string]: any } = {
   [STORE_NAMES.users]: [] as User[],
-  [STORE_NAMES.following]: [] as Following[],
   [STORE_NAMES.posts]: [] as Post[],
-  [STORE_NAMES.retweets]: [] as Retweet[],
-  [STORE_NAMES.likes]: [] as Like[],
-  [STORE_NAMES.comments]: [] as Comment[],
 };
 
 export async function getAllPosts(
@@ -42,7 +27,7 @@ export async function getAllPosts(
   const posts: Post[] = await new Promise<Post[]>((resolve, reject) => {
     const transaction = db.transaction([STORE_NAMES.posts], 'readonly');
     const store = transaction.objectStore(STORE_NAMES.posts);
-    const request = store.openCursor(null, 'prev'); // Open cursor in reverse order for descending sort
+    const request = store.openCursor(null, 'prev');
 
     const result: Post[] = [];
     let count = 0;
@@ -74,23 +59,21 @@ export async function getAllPosts(
   const postUserPairs: { post: Post; user: User }[] = [];
 
   for (const post of posts) {
-    post.retweets = await countRetweets(db, post.id!);
-    post.likes = await countLikes(db, post.id!);
-    const user = await getUserByEmail(db, post.email);
+    const user = await getUserById(db, post.userId);
     postUserPairs.push({ post, user });
   }
 
   return postUserPairs;
 }
 
-function getUserByEmail(
+function getUserById(
   db: IDBDatabase | typeof inMemoryDB,
-  email: string
+  userId: number
 ): Promise<User> {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAMES.users], 'readonly');
     const store = transaction.objectStore(STORE_NAMES.users);
-    const request = store.get(email);
+    const request = store.get(userId);
 
     request.onsuccess = () => {
       resolve(request.result as User);
@@ -98,65 +81,11 @@ function getUserByEmail(
 
     request.onerror = (event: any) => {
       console.error(
-        'IndexedDB get user by email error:',
+        'IndexedDB get user by id error:',
         (event.target as IDBRequest).error
       );
       reject(
-        `IndexedDB get user by email error: ${
-          (event.target as IDBRequest).error
-        }`
-      );
-    };
-  });
-}
-
-function countRetweets(
-  db: IDBDatabase | typeof inMemoryDB,
-  postId: number
-): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAMES.retweets], 'readonly');
-    const store = transaction.objectStore(STORE_NAMES.retweets);
-    const index = store.index('postId');
-    const request = index.getAll(postId);
-
-    request.onsuccess = () => {
-      resolve((request.result as Retweet[]).length);
-    };
-
-    request.onerror = (event: any) => {
-      console.error(
-        'IndexedDB count retweets error:',
-        (event.target as IDBRequest).error
-      );
-      reject(
-        `IndexedDB count retweets error: ${(event.target as IDBRequest).error}`
-      );
-    };
-  });
-}
-
-function countLikes(
-  db: IDBDatabase | typeof inMemoryDB,
-  postId: number
-): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAMES.likes], 'readonly');
-    const store = transaction.objectStore(STORE_NAMES.likes);
-    const index = store.index('postId');
-    const request = index.getAll(postId);
-
-    request.onsuccess = () => {
-      resolve((request.result as Like[]).length);
-    };
-
-    request.onerror = (event: any) => {
-      console.error(
-        'IndexedDB count likes error:',
-        (event.target as IDBRequest).error
-      );
-      reject(
-        `IndexedDB count likes error: ${(event.target as IDBRequest).error}`
+        `IndexedDB get user by id error: ${(event.target as IDBRequest).error}`
       );
     };
   });
@@ -164,75 +93,44 @@ function countLikes(
 
 export async function getPostsFromFollowedUsers(
   db: IDBDatabase | typeof inMemoryDB,
-  email: string,
+  userId: number,
   offset: number,
   limit: number
 ): Promise<{ post: Post; user: User }[]> {
-  const followings = await new Promise<Following[]>((resolve, reject) => {
-    try {
-      const transaction = db.transaction([STORE_NAMES.following], 'readonly');
-      const store = transaction.objectStore(STORE_NAMES.following);
-      const index = store.index('following');
-      const request = index.getAll(email);
-
-      request.onsuccess = () => {
-        resolve(request.result as Following[]);
-      };
-
-      request.onerror = (event: any) => {
-        console.error(
-          'IndexedDB get followings error:',
-          (event.target as IDBRequest).error
-        );
-        reject(
-          `IndexedDB get followings error: ${
-            (event.target as IDBRequest).error
-          }`
-        );
-      };
-    } catch (error) {
-      console.error('Error during getPostsFromFollowedUsers:', error);
-      reject(error);
-    }
-  });
-
-  const followedEmails = followings.map((following) => following.followed);
+  const user = await getUserById(db, userId);
+  const followedUsers = user.following;
   const allPosts: Post[] = [];
 
-  for (const followedEmail of followedEmails) {
-    const userPosts = await getPostsByUser(db, followedEmail);
+  for (const followedUser of followedUsers) {
+    const userPosts = await getPostsByUserId(db, followedUser.userId);
     allPosts.push(...userPosts);
   }
 
-  // Sort by postDate in descending order
   allPosts.sort(
     (a, b) => new Date(b.postDate).getTime() - new Date(a.postDate).getTime()
   );
 
-  // Paginate the results
   const paginatedPosts = allPosts.slice(offset, offset + limit);
 
   const postUserPairs: { post: Post; user: User }[] = [];
 
   for (const post of paginatedPosts) {
-    post.retweets = await countRetweets(db, post.id!);
-    post.likes = await countLikes(db, post.id!);
-    const user = await getUserByEmail(db, post.email);
+    const user = await getUserById(db, post.userId);
     postUserPairs.push({ post, user });
   }
 
   return postUserPairs;
 }
 
-function getPostsByUser(
+function getPostsByUserId(
   db: IDBDatabase | typeof inMemoryDB,
-  email: string
+  userId: number
 ): Promise<Post[]> {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAMES.posts], 'readonly');
     const store = transaction.objectStore(STORE_NAMES.posts);
-    const index = store.index('email');
-    const request = index.getAll(email);
+    const index = store.index('userId');
+    const request = index.getAll(userId);
 
     request.onsuccess = () => {
       resolve(request.result as Post[]);
@@ -255,69 +153,85 @@ export async function populateDB(
 ): Promise<void> {
   const users: User[] = [];
   for (let i = 1; i <= 500; i++) {
+    const userId = i;
     const email = `user${i}@example.com`;
     const firstName =
       firstNameOptions[Math.floor(Math.random() * firstNameOptions.length)];
     const lastName =
       lastNameOptions[Math.floor(Math.random() * lastNameOptions.length)];
     const password = btoa('123456');
+    const dateJoined = getRandomDate(
+      new Date(2022, 0, 1),
+      new Date(2023, 0, 1)
+    );
     const themePreference = 'light';
+    const userName = `${firstName} ${lastName}`;
 
     const user: User = {
+      userId,
+      userName,
       email,
-      firstName,
-      lastName,
       password,
+      dateJoined,
       themePreference,
+      following: [],
+      followers: [],
     };
     users.push(user);
     await addUser(db, user);
   }
 
-  const followings: Following[] = [];
-  let followingId = 1;
+  // Create followings and followers
   for (let user of users) {
-    const userEmail = user.email;
-    const followingCount = Math.floor(Math.random() * 16) + 5;
-    const followedUsers = new Set<string>();
+    const followingCount = Math.floor(Math.random() * 11); // 0 to 10 users
+    const followedUsers = new Set<number>();
 
     while (followedUsers.size < followingCount) {
       const randomUser = users[Math.floor(Math.random() * users.length)];
       if (
-        randomUser.email !== userEmail &&
-        !followedUsers.has(randomUser.email)
+        randomUser.userId !== user.userId &&
+        !followedUsers.has(randomUser.userId)
       ) {
-        followedUsers.add(randomUser.email);
-        followings.push({
-          id: followingId++,
-          following: userEmail,
-          followed: randomUser.email,
+        followedUsers.add(randomUser.userId);
+        user.following.push({
+          userId: randomUser.userId,
+          userName: randomUser.userName,
+          email: randomUser.email,
+        });
+        randomUser.followers.push({
+          userId: user.userId,
+          userName: user.userName,
+          email: user.email,
         });
       }
     }
   }
 
-  await addFollowings(db, followings);
+  // Save updated users with followings and followers
+  for (let user of users) {
+    await updateUser(db, user);
+  }
 
   const posts: Post[] = [];
   let postId = 1;
   for (let user of users) {
-    const userEmail = user.email;
+    const userId = user.userId;
     const postCount = Math.floor(Math.random() * 6) + 5;
 
     for (let i = 0; i < postCount; i++) {
       const postString =
         postsOptions[Math.floor(Math.random() * postsOptions.length)];
-      const tagged: string[] = [];
+      const tagged: Pick<User, 'userId' | 'userName' | 'email'>[] = [];
       const tagCount = Math.floor(Math.random() * 3);
 
       for (let j = 0; j < tagCount; j++) {
         const randomUser = users[Math.floor(Math.random() * users.length)];
-        if (
-          !tagged.includes(randomUser.email) &&
-          randomUser.email !== userEmail
-        ) {
-          tagged.push(randomUser.email);
+        if (randomUser.userId !== userId && !tagged.includes(randomUser)) {
+          tagged.push({
+            userId: randomUser.userId,
+            userName: randomUser.userName,
+            email: randomUser.email,
+          });
         }
       }
 
@@ -328,71 +242,87 @@ export async function populateDB(
 
       const post: Post = {
         id: postId++,
-        email: userEmail,
+        userId,
         post: postString,
-        tagged,
         postDate,
+        retweets: [],
+        likes: [],
+        retweetFrom: null,
+        comments: [],
+        tagged,
       };
+
+      // Add comments
+      const commentCount = Math.floor(Math.random() * 2) + 1;
+      for (let j = 0; j < commentCount; j++) {
+        const randomUser = users[Math.floor(Math.random() * users.length)];
+        const commentString =
+          commentsOptions[Math.floor(Math.random() * commentsOptions.length)];
+        const commentDate = addRandomDays(postDate, 1, 2);
+
+        const comment: Comment = {
+          id: post.comments.length + 1,
+          userId: randomUser.userId,
+          userName: randomUser.userName,
+          email: randomUser.email,
+          comment: commentString,
+          commentDate,
+        };
+
+        post.comments.push(comment);
+      }
+
       posts.push(post);
     }
   }
 
-  await addPosts(db, posts);
-
-  const retweets: Retweet[] = [];
-  for (let i = 0; i < 200; i++) {
-    const randomUser = users[Math.floor(Math.random() * users.length)];
-    const randomPost = posts[Math.floor(Math.random() * posts.length)];
-    const retweetedDate = addRandomDays(randomPost.postDate, 1, 2);
-
-    retweets.push({
-      userId: randomUser.email,
-      postId: randomPost.id!,
-      retweetedDate,
-    });
-  }
-
-  await addRetweets(db, retweets);
-
-  const likes: Like[] = [];
-  for (let user of users) {
-    const likedPosts = new Set<number>();
-    while (likedPosts.size < 20) {
+  // Add retweets
+  for (let post of posts) {
+    if (Math.random() < 0.5 && post.retweetFrom === null) {
       const randomPost = posts[Math.floor(Math.random() * posts.length)];
-      if (!likedPosts.has(randomPost.id!)) {
-        likedPosts.add(randomPost.id!);
-        const likeDate = addRandomDays(randomPost.postDate, 1, 2);
-        likes.push({
-          userId: user.email,
-          postId: randomPost.id!,
-          likeDate,
-        });
+      if (randomPost.id !== post.id && randomPost.retweetFrom === null) {
+        post.retweetFrom = randomPost.id!;
+        randomPost.retweets.push(post.id!);
       }
     }
   }
 
-  await addLikes(db, likes);
+  await addPosts(db, posts);
+}
 
-  const comments: Comment[] = [];
-  for (let post of posts) {
-    const commentCount = Math.floor(Math.random() * 3) + 1;
-
-    for (let i = 0; i < commentCount; i++) {
-      const randomUser = users[Math.floor(Math.random() * users.length)];
-      const comment =
-        commentsOptions[Math.floor(Math.random() * commentsOptions.length)];
-      const commentDate = addRandomDays(post.postDate, 1, 2);
-
-      comments.push({
-        userId: randomUser.email,
-        postId: post.id!,
-        comment,
-        commentDate,
-      });
+export function updateUser(
+  db: IDBDatabase | typeof inMemoryDB,
+  user: User
+): Promise<void> {
+  if (db === inMemoryDB) {
+    const index = (db as typeof inMemoryDB)[STORE_NAMES.users].findIndex(
+      (u: User) => u.userId === user.userId
+    );
+    if (index !== -1) {
+      (db as typeof inMemoryDB)[STORE_NAMES.users][index] = user;
     }
+    return Promise.resolve();
   }
 
-  await addComments(db, comments);
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.users], 'readwrite');
+    const store = transaction.objectStore(STORE_NAMES.users);
+    const request = store.put(user);
+
+    request.onsuccess = () => {
+      resolve();
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB update user error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB update user error: ${(event.target as IDBRequest).error}`
+      );
+    };
+  });
 }
 
 export function openDB(): Promise<IDBDatabase | typeof inMemoryDB> {
@@ -405,59 +335,26 @@ export function openDB(): Promise<IDBDatabase | typeof inMemoryDB> {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
-      const transaction = (event.target as IDBOpenDBRequest).transaction;
 
       if (!db.objectStoreNames.contains(STORE_NAMES.users)) {
-        db.createObjectStore(STORE_NAMES.users, { keyPath: 'email' });
-      }
-      if (!db.objectStoreNames.contains(STORE_NAMES.following)) {
-        const followingStore = db.createObjectStore(STORE_NAMES.following, {
-          keyPath: 'id',
+        const userStore = db.createObjectStore(STORE_NAMES.users, {
+          keyPath: 'userId',
           autoIncrement: true,
         });
-        followingStore.createIndex('following', 'following', { unique: false });
-        followingStore.createIndex('followed', 'followed', { unique: false });
-      } else if (transaction) {
-        const followingStore = transaction.objectStore(STORE_NAMES.following);
-        if (!followingStore.indexNames.contains('following')) {
-          followingStore.createIndex('following', 'following', {
-            unique: false,
-          });
-        }
-        if (!followingStore.indexNames.contains('followed')) {
-          followingStore.createIndex('followed', 'followed', {
-            unique: false,
-          });
+        userStore.createIndex('email', 'email', { unique: true }); // Create email index
+      } else {
+        const userStore = request.transaction!.objectStore(STORE_NAMES.users);
+        if (!userStore.indexNames.contains('email')) {
+          userStore.createIndex('email', 'email', { unique: true });
         }
       }
+
       if (!db.objectStoreNames.contains(STORE_NAMES.posts)) {
         const postsStore = db.createObjectStore(STORE_NAMES.posts, {
           keyPath: 'id',
           autoIncrement: true,
         });
-        postsStore.createIndex('email', 'email', { unique: false });
-      }
-      if (!db.objectStoreNames.contains(STORE_NAMES.retweets)) {
-        const retweetsStore = db.createObjectStore(STORE_NAMES.retweets, {
-          keyPath: 'id',
-          autoIncrement: true,
-        });
-        retweetsStore.createIndex('postId', 'postId', { unique: false });
-        retweetsStore.createIndex('userId', 'userId', { unique: false });
-      }
-      if (!db.objectStoreNames.contains(STORE_NAMES.likes)) {
-        const likesStore = db.createObjectStore(STORE_NAMES.likes, {
-          keyPath: 'id',
-          autoIncrement: true,
-        });
-        likesStore.createIndex('postId', 'postId', { unique: false });
-        likesStore.createIndex('userId', 'userId', { unique: false });
-      }
-      if (!db.objectStoreNames.contains(STORE_NAMES.comments)) {
-        db.createObjectStore(STORE_NAMES.comments, {
-          keyPath: 'id',
-          autoIncrement: true,
-        });
+        postsStore.createIndex('userId', 'userId', { unique: false });
       }
     };
 
@@ -546,132 +443,6 @@ export function addPosts(
   });
 }
 
-export function addRetweets(
-  db: IDBDatabase | typeof inMemoryDB,
-  retweets: Retweet[]
-): Promise<void> {
-  if (db === inMemoryDB) {
-    (db as typeof inMemoryDB)[STORE_NAMES.retweets].push(...retweets);
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAMES.retweets], 'readwrite');
-    const store = transaction.objectStore(STORE_NAMES.retweets);
-
-    retweets.forEach((retweet) => {
-      const request = store.add(retweet);
-      request.onerror = (event: any) => {
-        console.error(
-          'IndexedDB add retweet error:',
-          (event.target as IDBRequest).error
-        );
-        reject(
-          `IndexedDB add retweet error: ${(event.target as IDBRequest).error}`
-        );
-      };
-    });
-
-    transaction.oncomplete = () => {
-      resolve();
-    };
-
-    transaction.onerror = (event: any) => {
-      console.error(
-        'IndexedDB transaction error:',
-        (event.target as IDBRequest).error
-      );
-      reject(
-        `IndexedDB transaction error: ${(event.target as IDBRequest).error}`
-      );
-    };
-  });
-}
-
-export function addLikes(
-  db: IDBDatabase | typeof inMemoryDB,
-  likes: Like[]
-): Promise<void> {
-  if (db === inMemoryDB) {
-    (db as typeof inMemoryDB)[STORE_NAMES.likes].push(...likes);
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAMES.likes], 'readwrite');
-    const store = transaction.objectStore(STORE_NAMES.likes);
-
-    likes.forEach((like) => {
-      const request = store.add(like);
-      request.onerror = (event: any) => {
-        console.error(
-          'IndexedDB add like error:',
-          (event.target as IDBRequest).error
-        );
-        reject(
-          `IndexedDB add like error: ${(event.target as IDBRequest).error}`
-        );
-      };
-    });
-
-    transaction.oncomplete = () => {
-      resolve();
-    };
-
-    transaction.onerror = (event: any) => {
-      console.error(
-        'IndexedDB transaction error:',
-        (event.target as IDBRequest).error
-      );
-      reject(
-        `IndexedDB transaction error: ${(event.target as IDBRequest).error}`
-      );
-    };
-  });
-}
-
-export function addComments(
-  db: IDBDatabase | typeof inMemoryDB,
-  comments: Comment[]
-): Promise<void> {
-  if (db === inMemoryDB) {
-    (db as typeof inMemoryDB)[STORE_NAMES.comments].push(...comments);
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAMES.comments], 'readwrite');
-    const store = transaction.objectStore(STORE_NAMES.comments);
-
-    comments.forEach((comment) => {
-      const request = store.add(comment);
-      request.onerror = (event: any) => {
-        console.error(
-          'IndexedDB add comment error:',
-          (event.target as IDBRequest).error
-        );
-        reject(
-          `IndexedDB add comment error: ${(event.target as IDBRequest).error}`
-        );
-      };
-    });
-
-    transaction.oncomplete = () => {
-      resolve();
-    };
-
-    transaction.onerror = (event: any) => {
-      console.error(
-        'IndexedDB transaction error:',
-        (event.target as IDBRequest).error
-      );
-      reject(
-        `IndexedDB transaction error: ${(event.target as IDBRequest).error}`
-      );
-    };
-  });
-}
-
 export function getUsers(db: IDBDatabase | typeof inMemoryDB): Promise<User[]> {
   if (db === inMemoryDB) {
     return Promise.resolve((db as typeof inMemoryDB)[STORE_NAMES.users]);
@@ -701,20 +472,28 @@ export function getUsers(db: IDBDatabase | typeof inMemoryDB): Promise<User[]> {
 export function updateUserThemePreference(
   db: IDBDatabase | typeof inMemoryDB,
   email: string,
-  themePreference: string
+  themePreference: ThemePreference
 ): Promise<void> {
+  console.log(
+    'Starting updateUserThemePreference with themePreference:',
+    themePreference
+  );
+
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAMES.users], 'readwrite');
     const store = transaction.objectStore(STORE_NAMES.users);
-    const request = store.get(email);
+    const index = store.index('email');
+    const request = index.get(email);
 
     request.onsuccess = () => {
       const user = request.result as User;
       if (user) {
+        console.log('User before update:', user);
         user.themePreference = themePreference;
         const updateRequest = store.put(user);
 
         updateRequest.onsuccess = () => {
+          console.log('User after update:', user);
           resolve();
         };
 
@@ -730,183 +509,100 @@ export function updateUserThemePreference(
           );
         };
       } else {
+        console.log('User not found with email:', email);
         reject('User not found');
       }
     };
 
     request.onerror = (event: any) => {
       console.error(
-        'IndexedDB get user error:',
+        'IndexedDB get user by email error:',
         (event.target as IDBRequest).error
       );
-      reject(`IndexedDB get user error: ${(event.target as IDBRequest).error}`);
+      reject(
+        `IndexedDB get user by email error: ${
+          (event.target as IDBRequest).error
+        }`
+      );
     };
   });
 }
 
 export async function createUser(
   db: IDBDatabase | typeof inMemoryDB,
-  firstName: string,
-  lastName: string,
+  userName: string,
   email: string,
   password: string
 ): Promise<void> {
   const encodedPassword = btoa(password);
+  const dateJoined = new Date();
   const themePreference = 'system';
-  const user: User = {
+  const userId = (await getUsers(db)).length + 1;
+  const newUser: User = {
+    userId,
+    userName,
     email,
-    firstName,
-    lastName,
     password: encodedPassword,
+    dateJoined,
     themePreference,
+    following: [],
+    followers: [],
   };
 
-  await addUser(db, user);
-}
+  await addUser(db, newUser);
 
-export async function createRandomFollowingsAndFollowers(
-  db: IDBDatabase | typeof inMemoryDB,
-  email: string
-): Promise<void> {
-  const transaction = db.transaction([STORE_NAMES.users], 'readonly');
-  const store = transaction.objectStore(STORE_NAMES.users);
-  const request = store.get(email);
+  const allUsers = await getUsers(db);
 
-  request.onsuccess = async () => {
-    const newUser = request.result as User;
+  const followingCount = Math.floor(Math.random() * 11);
+  const followingSet = new Set<number>();
 
-    if (newUser) {
-      const followings: Following[] = [];
-      const followers: Following[] = [];
-
-      const followingCount = Math.floor(Math.random() * 6) + 15;
-
-      const followedUsers = new Set<string>();
-
-      while (followedUsers.size < followingCount) {
-        const randomUser = await getRandomUser(db, email);
-
-        if (
-          randomUser &&
-          randomUser.email !== email &&
-          !followedUsers.has(randomUser.email)
-        ) {
-          followedUsers.add(randomUser.email);
-          const following = {
-            following: email,
-            followed: randomUser.email,
-          };
-          followings.push(following);
-          if (followings.length === 1) {
-          }
-        }
-      }
-
-      const followerCount = Math.floor(Math.random() * 10) + 90;
-
-      const followerUsers = new Set<string>();
-
-      while (followerUsers.size < followerCount) {
-        const randomUser = await getRandomUser(db, email);
-
-        if (
-          randomUser &&
-          randomUser.email !== email &&
-          !followerUsers.has(randomUser.email)
-        ) {
-          followerUsers.add(randomUser.email);
-          const follower = {
-            following: randomUser.email,
-            followed: email,
-          };
-          followers.push(follower);
-          if (followers.length === 1) {
-          }
-        }
-      }
-
-      await addFollowings(db, [...followings, ...followers]);
-    } else {
+  while (followingSet.size < followingCount) {
+    const randomUser = allUsers[Math.floor(Math.random() * allUsers.length)];
+    if (
+      randomUser.userId !== newUser.userId &&
+      !followingSet.has(randomUser.userId)
+    ) {
+      followingSet.add(randomUser.userId);
+      newUser.following.push({
+        userId: randomUser.userId,
+        userName: randomUser.userName,
+        email: randomUser.email,
+      });
+      randomUser.followers.push({
+        userId: newUser.userId,
+        userName: newUser.userName,
+        email: newUser.email,
+      });
+      await updateUser(db, randomUser);
     }
-  };
-
-  request.onerror = (event: any) => {
-    console.error(
-      'IndexedDB get user error:',
-      (event.target as IDBRequest).error
-    );
-  };
-}
-
-export function addFollowings(
-  db: IDBDatabase | typeof inMemoryDB,
-  followings: Following[]
-): Promise<void> {
-  if (db === inMemoryDB) {
-    (db as typeof inMemoryDB)[STORE_NAMES.following].push(...followings);
-    return Promise.resolve();
   }
 
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAMES.following], 'readwrite');
-    const store = transaction.objectStore(STORE_NAMES.following);
+  const followerCount = Math.floor(Math.random() * 11) + 10;
+  const followersSet = new Set<number>();
 
-    followings.forEach((following) => {
-      const request = store.add(following);
-      request.onerror = (event: any) => {
-        console.error(
-          'IndexedDB add following error:',
-          (event.target as IDBRequest).error
-        );
-        reject(
-          `IndexedDB add following error: ${(event.target as IDBRequest).error}`
-        );
-      };
-    });
+  while (followersSet.size < followerCount) {
+    const randomUser = allUsers[Math.floor(Math.random() * allUsers.length)];
+    if (
+      randomUser.userId !== newUser.userId &&
+      !followersSet.has(randomUser.userId)
+    ) {
+      followersSet.add(randomUser.userId);
+      newUser.followers.push({
+        userId: randomUser.userId,
+        userName: randomUser.userName,
+        email: randomUser.email,
+      });
+      randomUser.following.push({
+        userId: newUser.userId,
+        userName: newUser.userName,
+        email: newUser.email,
+      });
+      await updateUser(db, randomUser);
+    }
+  }
 
-    transaction.oncomplete = () => {
-      resolve();
-    };
-
-    transaction.onerror = (event: any) => {
-      console.error(
-        'IndexedDB transaction error:',
-        (event.target as IDBRequest).error
-      );
-      reject(
-        `IndexedDB transaction error: ${(event.target as IDBRequest).error}`
-      );
-    };
-  });
+  await updateUser(db, newUser);
 }
-
-async function getRandomUser(
-  db: IDBDatabase | typeof inMemoryDB,
-  excludeEmail: string
-): Promise<User> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAMES.users], 'readonly');
-    const store = transaction.objectStore(STORE_NAMES.users);
-    const request = store.getAll();
-
-    request.onsuccess = () => {
-      const users = request.result as User[];
-      const filteredUsers = users.filter((user) => user.email !== excludeEmail);
-      const randomUser =
-        filteredUsers[Math.floor(Math.random() * filteredUsers.length)];
-      resolve(randomUser);
-    };
-
-    request.onerror = (event: any) => {
-      console.error(
-        'IndexedDB get users error:',
-        (event.target as IDBRequest).error
-      );
-      reject((event.target as IDBRequest).error);
-    };
-  });
-}
-
 function getRandomDate(start: Date, end: Date): Date {
   return new Date(
     start.getTime() + Math.random() * (end.getTime() - start.getTime())
