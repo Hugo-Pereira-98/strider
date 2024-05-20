@@ -46,6 +46,12 @@ const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
+  const handleCommentKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleAddComment();
+    }
+  };
+
   const toggleComments = () => {
     setShowComments((prev) => !prev);
     setCommentText('');
@@ -177,48 +183,51 @@ const PostCard: React.FC<PostCardProps> = ({
           <Badge key={taggedUser.userId} label={taggedUser.userName} />
         ))}
       </div>
-      {showComments && (
-        <div>
-          <div className="mt-2 flex items-start space-x-2 py-3 border-t border-gray-light-200 dark:border-gray-dark-800">
-            <input
-              type="text"
-              placeholder="Write a comment..."
-              value={commentText}
-              onChange={handleCommentChange}
-              maxLength={100}
-              className="w-full p-2 border border-gray-light-300 dark:border-gray-dark-700 bg-gray-light-25 dark:bg-gray-dark-900 rounded-md focus:outline-none focus:border-primary-600 dark:focus:border-primary-500"
-            />
-            <button
-              className={`px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors ${
-                commentText.trim() ? 'visible animate-fadeIn' : 'invisible'
-              } focus:outline-none`}
-              onClick={handleAddComment}
-            >
-              Comment
-            </button>
-          </div>
-          <div>
-            {post?.comments.map((comment) => (
-              <div key={comment?.id} className="mb-2">
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-gray-light-900 dark:text-white">
-                    {comment?.userName}
-                  </span>
-                  <span className="text-gray-light-500 dark:text-gray-dark-400">
-                    @{comment?.email.split('@')[0]}
-                  </span>
-                  <span className="text-gray-light-400 dark:text-gray-dark-500 text-sm">
-                    {format(new Date(comment?.commentDate), 'MMMM dd, yyyy')}
-                  </span>
-                </div>
-                <p className="text-gray-light-900 dark:text-white">
-                  {comment?.comment}
-                </p>
-              </div>
-            ))}
-          </div>
+      <div
+        className={`overflow-hidden transition-max-height duration-300 ease-in-out ${
+          showComments ? 'max-h-screen' : 'max-h-0'
+        }`}
+      >
+        <div className="mt-2 flex items-start space-x-2 py-3 border-t border-gray-light-200 dark:border-gray-dark-800">
+          <input
+            type="text"
+            placeholder="Write a comment..."
+            value={commentText}
+            onChange={handleCommentChange}
+            onKeyDown={handleCommentKeyPress}
+            maxLength={100}
+            className="w-full p-2 border border-gray-light-300 dark:border-gray-dark-700 bg-gray-light-25 dark:bg-gray-dark-900 rounded-md focus:outline-none focus:border-primary-600 dark:focus:border-primary-500"
+          />
+          <button
+            className={`px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors ${
+              commentText.trim() ? 'visible animate-fadeIn' : 'invisible'
+            } focus:outline-none`}
+            onClick={handleAddComment}
+          >
+            Comment
+          </button>
         </div>
-      )}
+        <div>
+          {post?.comments.map((comment) => (
+            <div key={comment?.id} className="mb-2">
+              <div className="flex items-center space-x-2">
+                <span className="font-bold text-gray-light-900 dark:text-white">
+                  {comment?.userName}
+                </span>
+                <span className="text-gray-light-500 dark:text-gray-dark-400">
+                  @{comment?.email.split('@')[0]}
+                </span>
+                <span className="text-gray-light-400 dark:text-gray-dark-500 text-sm">
+                  {format(new Date(comment?.commentDate), 'MMMM dd, yyyy')}
+                </span>
+              </div>
+              <p className="text-gray-light-900 dark:text-white">
+                {comment?.comment}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
       <div className="border-b border-gray-light-200 dark:border-gray-dark-800 pb-3 h-2 w-full" />
     </div>
   );
