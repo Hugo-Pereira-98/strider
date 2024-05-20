@@ -112,12 +112,10 @@ export async function getPostsFromFollowedUsers(
     allPosts.push(...userPosts);
   }
 
-  // Sort by postDate in descending order
   allPosts.sort(
     (a, b) => new Date(b.postDate).getTime() - new Date(a.postDate).getTime()
   );
 
-  // Paginate the results
   const paginatedPosts = allPosts.slice(offset, offset + limit);
 
   const postUserPairs: { post: Post; user: User }[] = [];
@@ -162,7 +160,7 @@ export async function populateDB(
   db: IDBDatabase | typeof inMemoryDB
 ): Promise<void> {
   const users: User[] = [];
-  for (let i = 1; i <= 500; i++) {
+  for (let i = 1; i <= 20; i++) {
     const userId = i;
     const email = `user${i}@example.com`;
     const firstName =
@@ -191,9 +189,8 @@ export async function populateDB(
     await addUser(db, user);
   }
 
-  // Create followings and followers
   for (let user of users) {
-    const followingCount = Math.floor(Math.random() * 11); // 0 to 10 users
+    const followingCount = Math.floor(Math.random() * 11);
     const followedUsers = new Set<number>();
 
     while (followedUsers.size < followingCount) {
@@ -217,85 +214,77 @@ export async function populateDB(
     }
   }
 
-  // Save updated users with followings and followers
   for (let user of users) {
     await updateUser(db, user);
   }
 
   const posts: Post[] = [];
-  let postId = 1;
-  for (let user of users) {
-    const userId = user.userId;
-    const postCount = Math.floor(Math.random() * 6) + 5;
+  for (let i = 0; i < 100; i++) {
+    const randomUser = users[Math.floor(Math.random() * users.length)];
+    const userId = randomUser.userId;
+    const postString =
+      postsOptions[Math.floor(Math.random() * postsOptions.length)];
+    const tagged: Pick<User, 'userId' | 'userName' | 'email'>[] = [];
+    const tagCount = Math.floor(Math.random() * 3);
 
-    for (let i = 0; i < postCount; i++) {
-      const postString =
-        postsOptions[Math.floor(Math.random() * postsOptions.length)];
-      const tagged: Pick<User, 'userId' | 'userName' | 'email'>[] = [];
-      const tagCount = Math.floor(Math.random() * 3);
-
-      for (let j = 0; j < tagCount; j++) {
-        const randomUser = users[Math.floor(Math.random() * users.length)];
-        if (randomUser.userId !== userId && !tagged.includes(randomUser)) {
-          tagged.push({
-            userId: randomUser.userId,
-            userName: randomUser.userName,
-            email: randomUser.email,
-          });
-        }
+    for (let j = 0; j < tagCount; j++) {
+      const randomTaggedUser = users[Math.floor(Math.random() * users.length)];
+      if (
+        randomTaggedUser.userId !== userId &&
+        !tagged.includes(randomTaggedUser)
+      ) {
+        tagged.push({
+          userId: randomTaggedUser.userId,
+          userName: randomTaggedUser.userName,
+          email: randomTaggedUser.email,
+        });
       }
+    }
 
-      const postDate = getRandomDate(
-        new Date(2024, 0, 1),
-        new Date(2024, 4, 1)
-      );
+    const postDate = getRandomDate(new Date(2024, 0, 1), new Date(2024, 4, 1));
 
-      const post: Post = {
-        id: postId++,
-        userId,
-        post: postString,
-        postDate,
-        retweets: [],
-        likes: [],
-        retweetFrom: null,
-        comments: [],
-        tagged,
+    const post: Post = {
+      id: i + 1,
+      userId,
+      post: postString,
+      postDate,
+      retweets: [],
+      likes: [],
+      retweetFrom: null,
+      comments: [],
+      tagged,
+    };
+
+    const commentCount = Math.floor(Math.random() * 2) + 1;
+    for (let j = 0; j < commentCount; j++) {
+      const randomCommentUser = users[Math.floor(Math.random() * users.length)];
+      const commentString =
+        commentsOptions[Math.floor(Math.random() * commentsOptions.length)];
+      const commentDate = addRandomDays(postDate, 1, 2);
+
+      const comment: Comment = {
+        id: post.comments.length + 1,
+        userId: randomCommentUser.userId,
+        userName: randomCommentUser.userName,
+        email: randomCommentUser.email,
+        comment: commentString,
+        commentDate,
       };
 
-      // Add comments
-      const commentCount = Math.floor(Math.random() * 2) + 1;
-      for (let j = 0; j < commentCount; j++) {
-        const randomUser = users[Math.floor(Math.random() * users.length)];
-        const commentString =
-          commentsOptions[Math.floor(Math.random() * commentsOptions.length)];
-        const commentDate = addRandomDays(postDate, 1, 2);
-
-        const comment: Comment = {
-          id: post.comments.length + 1,
-          userId: randomUser.userId,
-          userName: randomUser.userName,
-          email: randomUser.email,
-          comment: commentString,
-          commentDate,
-        };
-
-        post.comments.push(comment);
-      }
-
-      // Add likes
-      const likeCount = Math.floor(Math.random() * 21); // 0 to 20 users
-      for (let k = 0; k < likeCount; k++) {
-        const randomUser = users[Math.floor(Math.random() * users.length)];
-        if (!post.likes.includes(randomUser.userId)) {
-          post.likes.push(randomUser.userId);
-        }
-      }
-
-      posts.push(post);
+      post.comments.push(comment);
     }
+
+    const likeCount = Math.floor(Math.random() * 21);
+    for (let k = 0; k < likeCount; k++) {
+      const randomLikeUser = users[Math.floor(Math.random() * users.length)];
+      if (!post.likes.includes(randomLikeUser.userId)) {
+        post.likes.push(randomLikeUser.userId);
+      }
+    }
+
+    posts.push(post);
   }
 
-  // Add retweets
   for (let post of posts) {
     if (Math.random() < 0.5 && post.retweetFrom === null) {
       const randomPost = posts[Math.floor(Math.random() * posts.length)];
@@ -314,6 +303,156 @@ export async function populateDB(
   }
 
   await addPosts(db, posts);
+}
+
+export async function addComment(
+  db: IDBDatabase | typeof inMemoryDB,
+  postId: number,
+  comment: Comment
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.posts], 'readwrite');
+    const store = transaction.objectStore(STORE_NAMES.posts);
+    const request = store.get(postId);
+
+    request.onsuccess = () => {
+      const post = request.result as Post;
+      if (post) {
+        post.comments.unshift(comment);
+        const updateRequest = store.put(post);
+
+        updateRequest.onsuccess = () => {
+          resolve();
+        };
+
+        updateRequest.onerror = (event: any) => {
+          console.error(
+            'IndexedDB add comment error:',
+            (event.target as IDBRequest).error
+          );
+          reject(
+            `IndexedDB add comment error: ${(event.target as IDBRequest).error}`
+          );
+        };
+      } else {
+        reject('Post not found');
+      }
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB get post by id error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB get post by id error: ${(event.target as IDBRequest).error}`
+      );
+    };
+  });
+}
+
+export async function toggleLike(
+  db: IDBDatabase | typeof inMemoryDB,
+  postId: number,
+  userId: number
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.posts], 'readwrite');
+    const store = transaction.objectStore(STORE_NAMES.posts);
+    const request = store.get(postId);
+
+    request.onsuccess = () => {
+      const post = request.result as Post;
+      if (post) {
+        const likeIndex = post.likes.indexOf(userId);
+        if (likeIndex > -1) {
+          post.likes.splice(likeIndex, 1);
+        } else {
+          post.likes.push(userId);
+        }
+        const updateRequest = store.put(post);
+
+        updateRequest.onsuccess = () => {
+          resolve();
+        };
+
+        updateRequest.onerror = (event: any) => {
+          console.error(
+            'IndexedDB toggle like error:',
+            (event.target as IDBRequest).error
+          );
+          reject(
+            `IndexedDB toggle like error: ${(event.target as IDBRequest).error}`
+          );
+        };
+      } else {
+        reject('Post not found');
+      }
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB get post by id error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB get post by id error: ${(event.target as IDBRequest).error}`
+      );
+    };
+  });
+}
+
+export async function toggleRetweet(
+  db: IDBDatabase | typeof inMemoryDB,
+  postId: number,
+  userId: number
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.posts], 'readwrite');
+    const store = transaction.objectStore(STORE_NAMES.posts);
+    const request = store.get(postId);
+
+    request.onsuccess = () => {
+      const post = request.result as Post;
+      if (post) {
+        const retweetIndex = post.retweets.indexOf(userId);
+        if (retweetIndex > -1) {
+          post.retweets.splice(retweetIndex, 1);
+        } else {
+          post.retweets.push(userId);
+        }
+        const updateRequest = store.put(post);
+
+        updateRequest.onsuccess = () => {
+          resolve();
+        };
+
+        updateRequest.onerror = (event: any) => {
+          console.error(
+            'IndexedDB toggle retweet error:',
+            (event.target as IDBRequest).error
+          );
+          reject(
+            `IndexedDB toggle retweet error: ${
+              (event.target as IDBRequest).error
+            }`
+          );
+        };
+      } else {
+        reject('Post not found');
+      }
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB get post by id error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB get post by id error: ${(event.target as IDBRequest).error}`
+      );
+    };
+  });
 }
 
 export function updateUser(
@@ -367,7 +506,7 @@ export function openDB(): Promise<IDBDatabase | typeof inMemoryDB> {
           keyPath: 'userId',
           autoIncrement: true,
         });
-        userStore.createIndex('email', 'email', { unique: true }); // Create email index
+        userStore.createIndex('email', 'email', { unique: true });
       } else {
         const userStore = request.transaction!.objectStore(STORE_NAMES.users);
         if (!userStore.indexNames.contains('email')) {

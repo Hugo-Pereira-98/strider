@@ -6,18 +6,14 @@ import { SelectDown } from '@/components/ui/SelectDown';
 import classNames from 'classnames';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { ReactNode, useState } from 'react';
+import { ReactNode } from 'react';
 import { useSidebar } from '../contexts/SidebarContext';
 
-interface InstitutionalLayoutProps {
-  title?: string;
-  subtitle?: string;
-  content?: ReactNode;
+interface UserLayoutProps {
   menuItems?: {
     url: string;
     text: string;
   }[];
-  actionControls?: ReactNode;
   sessions: {
     text: string;
     icon?: any;
@@ -28,21 +24,16 @@ interface InstitutionalLayoutProps {
   useHeader?: boolean | undefined;
 }
 
-export function InstitutionalLayout({
-  title,
-  subtitle,
-  content,
+export function UserLayout({
   menuItems,
-  actionControls,
   sessions,
   children,
   useBorder = true,
   useHeader = true,
-}: InstitutionalLayoutProps) {
+}: UserLayoutProps) {
   const router = useRouter();
 
-  const { sidebarOpen, setSidebarOpen, isCollapsed, setIsCollapsed } =
-    useSidebar();
+  const { sidebarOpen, setSidebarOpen } = useSidebar();
 
   return (
     <div className="2xl:grid 2xl:grid-cols-[auto,1fr]">
@@ -61,31 +52,13 @@ export function InstitutionalLayout({
 
         <div className="w-full 2xl:w-[calc(100vw-224px)] 2xl:max-w-[1280px]">
           {useHeader && (
-            <div className="p-6 sm:p-8 space-y-6 pb-0">
+            <div className="px-6 pt-6 sm:px-8 sm:pt-8 ">
               <Breadcrumbs
                 type="textIcon"
                 textPosition="rightIcon"
                 sessions={sessions}
                 separator="arrow"
               />
-              <header className="w-full flex flex-col sm:flex-row items-start justify-between gap-4">
-                {title ? (
-                  <div>
-                    <h1 className="heading-small-semibold text-gray-light-950 dark:text-gray-dark-50">
-                      {title}
-                    </h1>
-                    {subtitle && (
-                      <h2 className="body-medium-regular text-gray-light-600 dark:text-gray-dark-400 mt-1">
-                        {subtitle}
-                      </h2>
-                    )}
-                  </div>
-                ) : (
-                  content
-                )}
-
-                <div className="flex items-center gap-3">{actionControls}</div>
-              </header>
 
               {menuItems && (
                 <>
@@ -132,28 +105,12 @@ export function InstitutionalLayout({
               )}
             </div>
           )}
-          <main
-            className={classNames(
-              {
-                'p-6 sm:p-8': !(
-                  router.pathname.includes('companies') ||
-                  router.pathname.includes('indications')
-                ),
-              },
-              {
-                'lg:p-8':
-                  router.pathname.includes('companies') ||
-                  router.pathname.includes('indications'),
-              },
-              '5xl:max-w-[75rem] 5xl:mx-auto !pt-0'
-            )}
-          >
-            <div className="animate-fadeIn mt-2 space-y-6">{children}</div>
+          <main className={classNames('5xl:max-w-[75rem] 5xl:mx-auto')}>
+            <div className="animate-fadeIn">{children}</div>
           </main>
         </div>
       </div>
 
-      {/* Sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0" onClick={() => setSidebarOpen(false)} />
       )}

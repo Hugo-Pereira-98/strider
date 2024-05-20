@@ -19,8 +19,6 @@ interface BreadcrumbsProps {
 }
 
 export default function Breadcrumbs({
-  type,
-  textPosition,
   sessions,
   separator = 'arrow',
 }: BreadcrumbsProps) {
@@ -33,7 +31,6 @@ export default function Breadcrumbs({
         ? () => {}
         : HiChevronRight;
 
-    // Function to handle session click
     const handleSessionClick = () => {
       if (session.route) {
         router.push(session.route);
@@ -86,7 +83,7 @@ export default function Breadcrumbs({
                   index === sessions.length - 1,
               },
               { 'gap-2': session.icon },
-              { 'px-2 py-1 rounded-md': !session.icon },
+              { 'px-2 py-1 pt-[6px] rounded-md': !session.icon },
               'flex items-center'
             )}
           >
