@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { clearStorage } from '@/utils/clearStorage';
 import { getCookie } from 'cookies-next';
 
 interface PrivateLayoutProps {
@@ -14,7 +13,6 @@ export function PrivateLayout({ children }: PrivateLayoutProps) {
     const idCookie = getCookie('posterr-id');
 
     if (!idCookie && !router.pathname.startsWith('/auth')) {
-      clearStorage();
       router.push('/auth/signin');
     }
   }, [router]);

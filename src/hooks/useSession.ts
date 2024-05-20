@@ -1,4 +1,3 @@
-import { clearStorage } from '@/utils/clearStorage';
 import { useRouter } from 'next/router';
 import { useSessionContext } from '../contexts/SessionContext';
 import { useCallback, useEffect, useState } from 'react';
@@ -102,7 +101,6 @@ export function useSession(): SessionProps {
       }
     } catch (error) {}
 
-    clearStorage();
     router.push('/');
   }, [router]);
 

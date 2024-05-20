@@ -1,5 +1,13 @@
 const DB_NAME = 'posterr-db';
 const DB_VERSION = 1;
+import {
+  Following,
+  Post,
+  User,
+  Retweet,
+  Like,
+  Comment,
+} from '@/utils/interfaces';
 const STORE_NAMES = {
   users: 'users',
   following: 'following',
@@ -24,8 +32,8 @@ const inMemoryDB: { [key: string]: any } = {
   [STORE_NAMES.comments]: [],
 };
 
-export function getAllPosts(db: any): Promise<any[]> {
-  return new Promise((resolve, reject) => {
+export async function getAllPosts(db: any): Promise<any[]> {
+  const posts = await new Promise<any[]>((resolve, reject) => {
     const transaction = db.transaction([STORE_NAMES.posts], 'readonly');
     const store = transaction.objectStore(STORE_NAMES.posts);
     const request = store.getAll();
@@ -44,6 +52,13 @@ export function getAllPosts(db: any): Promise<any[]> {
       );
     };
   });
+
+  for (const post of posts) {
+    post.retweets = await countRetweets(db, post.id);
+    post.likes = await countLikes(db, post.id);
+  }
+
+  return posts;
 }
 
 function countRetweets(db: any, postId: number): Promise<number> {
@@ -96,24 +111,14 @@ export async function getPostsFromFollowedUsers(
   db: any,
   email: string
 ): Promise<any[]> {
-  const transaction = db.transaction([STORE_NAMES.following], 'readonly');
-  const store = transaction.objectStore(STORE_NAMES.following);
-  const request = store.index('following').getAll(email);
+  const followings = await new Promise<any[]>((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.following], 'readonly');
+    const store = transaction.objectStore(STORE_NAMES.following);
+    const index = store.index('following');
+    const request = index.getAll(email);
 
-  return new Promise((resolve, reject) => {
-    request.onsuccess = async () => {
-      const followings = request.result;
-      const followedEmails = followings.map(
-        (following: any) => following.followed
-      );
-      const posts: any[] = [];
-
-      for (const followedEmail of followedEmails) {
-        const userPosts = await getPostsByUser(db, followedEmail);
-        posts.push(...userPosts);
-      }
-
-      resolve(posts);
+    request.onsuccess = () => {
+      resolve(request.result);
     };
 
     request.onerror = (event: any) => {
@@ -126,6 +131,20 @@ export async function getPostsFromFollowedUsers(
       );
     };
   });
+
+  const followedEmails = followings.map((following: any) => following.followed);
+  const posts: any[] = [];
+
+  for (const followedEmail of followedEmails) {
+    const userPosts = await getPostsByUser(db, followedEmail);
+    for (const post of userPosts) {
+      post.retweets = await countRetweets(db, post.id);
+      post.likes = await countLikes(db, post.id);
+    }
+    posts.push(...userPosts);
+  }
+
+  return posts;
 }
 
 function getPostsByUser(db: any, email: string): Promise<any[]> {
@@ -304,6 +323,7 @@ export function openDB(): Promise<any> {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
+
       if (!db.objectStoreNames.contains(STORE_NAMES.users)) {
         db.createObjectStore(STORE_NAMES.users, { keyPath: 'email' });
       }
@@ -320,16 +340,18 @@ export function openDB(): Promise<any> {
         });
       }
       if (!db.objectStoreNames.contains(STORE_NAMES.retweets)) {
-        db.createObjectStore(STORE_NAMES.retweets, {
+        const retweetsStore = db.createObjectStore(STORE_NAMES.retweets, {
           keyPath: 'id',
           autoIncrement: true,
         });
+        retweetsStore.createIndex('postId', 'postId', { unique: false });
       }
       if (!db.objectStoreNames.contains(STORE_NAMES.likes)) {
-        db.createObjectStore(STORE_NAMES.likes, {
+        const likesStore = db.createObjectStore(STORE_NAMES.likes, {
           keyPath: 'id',
           autoIncrement: true,
         });
+        likesStore.createIndex('postId', 'postId', { unique: false });
       }
       if (!db.objectStoreNames.contains(STORE_NAMES.comments)) {
         db.createObjectStore(STORE_NAMES.comments, {
