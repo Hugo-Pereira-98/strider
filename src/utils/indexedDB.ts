@@ -22,7 +22,8 @@ const inMemoryDB: { [key: string]: any } = {
 export async function getAllPosts(
   db: IDBDatabase | typeof inMemoryDB,
   offset: number,
-  limit: number
+  limit: number,
+  searchTerm: string = ''
 ): Promise<{ post: Post; user: User }[]> {
   const posts: Post[] = await new Promise<Post[]>((resolve, reject) => {
     const transaction = db.transaction([STORE_NAMES.posts], 'readonly');
@@ -35,8 +36,21 @@ export async function getAllPosts(
     request.onsuccess = (event: Event) => {
       const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
       if (cursor) {
-        if (count >= offset && result.length < limit) {
-          result.push(cursor.value as Post);
+        const post = cursor.value as Post;
+        const isQuotePost =
+          post.retweetFrom &&
+          post.post &&
+          post.post.toLowerCase().includes(searchTerm.toLowerCase());
+
+        if (
+          count >= offset &&
+          result.length < limit &&
+          !post.retweetFrom &&
+          post.post.toLowerCase().includes(searchTerm.toLowerCase())
+        ) {
+          result.push(post);
+        } else if (isQuotePost) {
+          result.push(post);
         }
         count++;
         cursor.continue();
@@ -95,7 +109,8 @@ export async function getPostsFromFollowedUsers(
   db: IDBDatabase | typeof inMemoryDB,
   email: string,
   offset: number,
-  limit: number
+  limit: number,
+  searchTerm: string = ''
 ): Promise<{ post: Post; user: User }[]> {
   const users = await getUsers(db);
   const user = users.find((u) => u.email === email);
@@ -116,7 +131,19 @@ export async function getPostsFromFollowedUsers(
     (a, b) => new Date(b.postDate).getTime() - new Date(a.postDate).getTime()
   );
 
-  const paginatedPosts = allPosts.slice(offset, offset + limit);
+  const filteredPosts = allPosts.filter((post) => {
+    const isQuotePost =
+      post.retweetFrom &&
+      post.post &&
+      post.post.toLowerCase().includes(searchTerm.toLowerCase());
+    return (
+      (!post.retweetFrom &&
+        post.post.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      isQuotePost
+    );
+  });
+
+  const paginatedPosts = filteredPosts.slice(offset, offset + limit);
 
   const postUserPairs: { post: Post; user: User }[] = [];
 

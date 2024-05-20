@@ -12,7 +12,7 @@ export interface User {
 export interface Post {
   id?: number;
   userId: number;
-  post?: string;
+  post: string;
   postDate: Date;
   retweets: number[];
   likes: number[];
