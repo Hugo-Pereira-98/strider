@@ -93,30 +93,40 @@ function getUserById(
 
 export async function getPostsFromFollowedUsers(
   db: IDBDatabase | typeof inMemoryDB,
-  userId: number,
+  email: string,
   offset: number,
   limit: number
 ): Promise<{ post: Post; user: User }[]> {
-  const user = await getUserById(db, userId);
-  const followedUsers = user.following;
+  const users = await getUsers(db);
+  const user = users.find((u) => u.email === email);
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const followedUsers = user.following.map((f) => f.userId);
   const allPosts: Post[] = [];
 
-  for (const followedUser of followedUsers) {
-    const userPosts = await getPostsByUserId(db, followedUser.userId);
+  for (const userId of followedUsers) {
+    const userPosts = await getPostsByUserId(db, userId);
     allPosts.push(...userPosts);
   }
 
+  // Sort by postDate in descending order
   allPosts.sort(
     (a, b) => new Date(b.postDate).getTime() - new Date(a.postDate).getTime()
   );
 
+  // Paginate the results
   const paginatedPosts = allPosts.slice(offset, offset + limit);
 
   const postUserPairs: { post: Post; user: User }[] = [];
 
   for (const post of paginatedPosts) {
-    const user = await getUserById(db, post.userId);
-    postUserPairs.push({ post, user });
+    const postUser = users.find((u) => u.userId === post.userId);
+    if (postUser) {
+      postUserPairs.push({ post, user: postUser });
+    }
   }
 
   return postUserPairs;
@@ -272,6 +282,15 @@ export async function populateDB(
         post.comments.push(comment);
       }
 
+      // Add likes
+      const likeCount = Math.floor(Math.random() * 21); // 0 to 20 users
+      for (let k = 0; k < likeCount; k++) {
+        const randomUser = users[Math.floor(Math.random() * users.length)];
+        if (!post.likes.includes(randomUser.userId)) {
+          post.likes.push(randomUser.userId);
+        }
+      }
+
       posts.push(post);
     }
   }
@@ -281,7 +300,14 @@ export async function populateDB(
     if (Math.random() < 0.5 && post.retweetFrom === null) {
       const randomPost = posts[Math.floor(Math.random() * posts.length)];
       if (randomPost.id !== post.id && randomPost.retweetFrom === null) {
-        post.retweetFrom = randomPost.id!;
+        post.retweetFrom = {
+          postId: randomPost.id!,
+          postDate: randomPost.postDate,
+          tagged: randomPost.tagged,
+          userId: randomPost.userId,
+          userName: users.find((u) => u.userId === randomPost.userId)!.userName,
+          email: users.find((u) => u.userId === randomPost.userId)!.email,
+        };
         randomPost.retweets.push(post.id!);
       }
     }

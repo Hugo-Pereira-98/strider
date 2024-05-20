@@ -16,9 +16,18 @@ export interface Post {
   postDate: Date;
   retweets: number[];
   likes: number[];
-  retweetFrom?: number | null;
+  retweetFrom?: RetweetFrom | null;
   comments: Comment[];
   tagged: Pick<User, 'userId' | 'userName' | 'email'>[];
+}
+
+export interface RetweetFrom {
+  postId: number;
+  postDate: Date;
+  tagged: Pick<User, 'userId' | 'userName' | 'email'>[];
+  userId: number;
+  userName: string;
+  email: string;
 }
 
 export interface Comment {
