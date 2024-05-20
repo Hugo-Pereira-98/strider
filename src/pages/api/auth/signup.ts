@@ -8,37 +8,38 @@ export const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(405).end();
   }
 
-  const { email, firstName, lastName } = req.body;
+  const { email, userName, userId } = req.body;
   const emailLowerCase = email.toLowerCase();
 
   try {
     const db = await openDB();
     const users = await getUsers(db);
-    console.log(0);
 
     const existingUser = users.find((user) => user.email === emailLowerCase);
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
-    console.log(1);
 
     const fakeToken = jwt.sign(
       {
         email: emailLowerCase,
-        name: `${firstName} ${lastName}`,
+        userName: userName,
+        dateJoined: new Date(),
+        userId,
       },
       process.env.NEXT_PUBLIC_AUTH0_CLIENT_SECRET!,
       { expiresIn: '1h' }
     );
-    console.log(2);
 
     const refreshExpiresIn = 30 * 24 * 60 * 60;
     const accessExpiresIn = 60 * 60;
 
     const userIdData = {
       email: emailLowerCase,
-      name: `${firstName} ${lastName}`,
+      userName: userName,
+      dateJoined: new Date(),
       sidebarCollapsed: true,
+      userId,
     };
     setCookie('posterr-id', JSON.stringify(userIdData), {
       req,

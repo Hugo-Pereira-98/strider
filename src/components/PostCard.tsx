@@ -13,12 +13,22 @@ import {
 interface PostCardProps {
   post: Post;
   user: User;
-  sessionUserId: number; // Add this prop to get the session user ID
+  sessionUserId: number;
+  sessionUserName: string;
+  sessionUserEmail: string;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post, user, sessionUserId }) => {
+const PostCard: React.FC<PostCardProps> = ({
+  post,
+  user,
+  sessionUserId,
+  sessionUserName,
+  sessionUserEmail,
+}) => {
   const [commentText, setCommentText] = useState<string>('');
   const [showComments, setShowComments] = useState<boolean>(false);
+  const [likes, setLikes] = useState<number[]>(post.likes);
+  const [retweets, setRetweets] = useState<number[]>(post.retweets);
 
   const getInitials = (name: string) => {
     return name
@@ -47,14 +57,13 @@ const PostCard: React.FC<PostCardProps> = ({ post, user, sessionUserId }) => {
       const newComment: Comment = {
         id: post.comments.length + 1,
         userId: sessionUserId,
-        userName: user.userName,
-        email: user.email,
+        userName: sessionUserName,
+        email: sessionUserEmail,
         comment: commentText.trim(),
         commentDate: new Date(),
       };
       await addComment(db, post.id!, newComment);
       setCommentText('');
-      // Update the comments locally to reflect the change
       post.comments.unshift(newComment);
     }
   };
@@ -62,24 +71,24 @@ const PostCard: React.FC<PostCardProps> = ({ post, user, sessionUserId }) => {
   const handleToggleLike = async () => {
     const db = await openDB();
     await toggleLike(db, post.id!, sessionUserId);
-    // Update the likes locally to reflect the change
-    const likeIndex = post.likes.indexOf(sessionUserId);
+    const likeIndex = likes.indexOf(sessionUserId);
     if (likeIndex > -1) {
-      post.likes.splice(likeIndex, 1); // Dislike the post
+      setLikes((prevLikes) => prevLikes.filter((id) => id !== sessionUserId));
     } else {
-      post.likes.push(sessionUserId); // Like the post
+      setLikes((prevLikes) => [...prevLikes, sessionUserId]);
     }
   };
 
   const handleToggleRetweet = async () => {
     const db = await openDB();
     await toggleRetweet(db, post.id!, sessionUserId);
-    // Update the retweets locally to reflect the change
-    const retweetIndex = post.retweets.indexOf(sessionUserId);
+    const retweetIndex = retweets.indexOf(sessionUserId);
     if (retweetIndex > -1) {
-      post.retweets.splice(retweetIndex, 1); // Undo retweet
+      setRetweets((prevRetweets) =>
+        prevRetweets.filter((id) => id !== sessionUserId)
+      );
     } else {
-      post.retweets.push(sessionUserId); // Retweet
+      setRetweets((prevRetweets) => [...prevRetweets, sessionUserId]);
     }
   };
 
@@ -106,21 +115,54 @@ const PostCard: React.FC<PostCardProps> = ({ post, user, sessionUserId }) => {
           </span>
         </div>
       </div>
+
+      {post.retweetFrom && (
+        <div className="bg-gray-light-25 dark:bg-gray-dark-900 p-3 rounded-md mb-3">
+          <div className="flex items-center mb-2">
+            <div className="rounded-full h-8 w-8 border border-gray-light-400 dark:border-gray-dark-800 flex items-center justify-center relative">
+              <span className="body-small-semiBold text-gray-light-500 dark:text-gray-dark-400">
+                {getInitials(post.retweetFrom.userName)}
+              </span>
+            </div>
+            <div className="ml-3">
+              <div className="flex items-center space-x-2">
+                <span className="font-bold text-gray-light-900 dark:text-white">
+                  {post.retweetFrom.userName}
+                </span>
+                <span className="text-gray-light-500 dark:text-gray-dark-400">
+                  @{post.retweetFrom.email.split('@')[0]}
+                </span>
+              </div>
+              <span className="text-gray-light-400 dark:text-gray-dark-500 text-sm">
+                {format(new Date(post.retweetFrom.postDate), 'MMMM dd, yyyy')}
+              </span>
+            </div>
+          </div>
+          <p className="text-gray-light-900 dark:text-white mb-3">
+            {post.retweetFrom.post}
+          </p>
+        </div>
+      )}
+
       <p className="text-gray-light-900 dark:text-white mb-3">{post?.post}</p>
       <div className="flex space-x-4 text-gray-light-500 dark:text-gray-dark-400 text-sm mb-2">
         <span
-          className="flex items-center space-x-1 hover:text-green-600 transition-colors cursor-pointer"
+          className={`flex items-center space-x-1 hover:text-green-600 transition-colors cursor-pointer ${
+            retweets.includes(sessionUserId) ? 'text-green-600' : ''
+          }`}
           onClick={handleToggleRetweet}
         >
           <FaRetweet />
-          <span>{post?.retweets.length}</span>
+          <span>{retweets.length}</span>
         </span>
         <span
-          className="flex items-center space-x-1 hover:text-red-600 transition-colors cursor-pointer"
+          className={`flex items-center space-x-1 hover:text-red-600 transition-colors cursor-pointer ${
+            likes.includes(sessionUserId) ? 'text-red-600' : ''
+          }`}
           onClick={handleToggleLike}
         >
           <FaHeart />
-          <span>{post?.likes.length}</span>
+          <span>{likes.length}</span>
         </span>
         <span
           className="flex items-center space-x-1 hover:text-blue-600 transition-colors cursor-pointer"
@@ -149,7 +191,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, user, sessionUserId }) => {
             <button
               className={`px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors ${
                 commentText.trim() ? 'visible' : 'invisible'
-              }`}
+              } focus:outline-none`}
               onClick={handleAddComment}
             >
               Comment

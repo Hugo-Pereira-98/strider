@@ -9,7 +9,7 @@ import { ArrowDown } from '../Icons/ArrowDown';
 import { CornerDownLeft } from '../Icons/CornerDownLeft';
 import { Search } from '../Icons/Search';
 import { UserPlus } from '../Icons/UserPlus';
-import Button from '../ui/Button';
+import Button from '../Button';
 
 interface IRecentCompany {
   name: string;

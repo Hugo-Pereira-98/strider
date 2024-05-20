@@ -9,7 +9,7 @@ import { ArrowRight } from '../Icons/ArrowRight';
 import { Dot } from '../Icons/Dot';
 import { Search } from '../Icons/Search';
 import Badge from '../ui/Badge';
-import Button from '../ui/Button';
+import Button from '../Button';
 import InputField from '../ui/Input';
 import { Spinner } from '../ui/Spinner';
 import { Table } from '../ui/Table';

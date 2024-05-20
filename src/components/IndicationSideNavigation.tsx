@@ -3,7 +3,7 @@ import { CheckCircle } from '@/components/Icons/CheckCircle';
 import { Cube } from '@/components/Icons/Cube';
 import { Sliders } from '@/components/Icons/Sliders';
 import { IndicationLeaveModal } from '@/components/Modal/IndicationLeaveModal';
-import Button from '@/components/ui/Button';
+import Button from '@/components/Button';
 import { getFormType } from '@/utils/functions';
 import Image from 'next/image';
 import { useRouter } from 'next/router';

@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 import { FeaturedIcon } from '@/components/FeaturedIcon';
 import { Atom } from '@/components/Icons/Atom';
-import Button from '@/components/ui/Button';
+import Button from '@/components/Button';
 import { Container } from '@/components/ui/Container';
 import { Form } from '@/components/ui/Form';
 import InputField from '@/components/ui/Input';

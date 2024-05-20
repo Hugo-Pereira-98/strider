@@ -25,6 +25,7 @@ export interface RetweetFrom {
   postId: number;
   postDate: Date;
   tagged: Pick<User, 'userId' | 'userName' | 'email'>[];
+  post: string;
   userId: number;
   userName: string;
   email: string;

@@ -18,7 +18,7 @@ import { Search } from '../Icons/Search';
 import { TriangleMedium } from '../Icons/TriangleMedium';
 import { TriangleMediumDown } from '../Icons/TriangleMediumDown';
 import Badge from '../ui/Badge';
-import Button from '../ui/Button';
+import Button from '../Button';
 import InputField from '../ui/Input';
 import { Spinner } from '../ui/Spinner';
 import { Table } from '../ui/Table';

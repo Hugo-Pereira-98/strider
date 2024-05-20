@@ -1,6 +1,6 @@
+import Button from '@/components/Button';
 import { FeaturedIcon } from '@/components/FeaturedIcon';
 import { Atom } from '@/components/Icons/Atom';
-import Button from '@/components/ui/Button';
 import { Container } from '@/components/ui/Container';
 import { Form } from '@/components/ui/Form';
 import InputField from '@/components/ui/Input';
@@ -25,19 +25,13 @@ const signUpSchema = z.object({
       /[`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/,
       'Must contain one special character'
     ),
-  first_name: z
+  userName: z
     .string()
-    .min(1, 'First name required')
+    .min(1, 'Username required')
+    .max(14, 'Maximum 14 characters')
     .regex(
-      /^[A-Za-z\s]+$/,
-      'First name should not contain numbers or special characters'
-    ),
-  last_name: z
-    .string()
-    .min(1, 'Last name required')
-    .regex(
-      /^[A-Za-z\s]+$/,
-      'Last name should not contain numbers or special characters'
+      /^[A-Za-z0-9]+$/,
+      'Username should contain only alphanumeric characters'
     ),
   acceptTerms: z.boolean().default(false),
 });
@@ -51,16 +45,13 @@ export default function SignUp() {
     defaultValues: {
       email: '',
       password: '',
-      first_name: '',
-      last_name: '',
+      userName: '',
       acceptTerms: false,
     },
     resolver: zodResolver(signUpSchema),
   });
 
-  const { setValue } = methods;
   const { toast } = useToast();
-  const [checkedToS, setCheckedToS] = useState(false);
 
   const {
     register,
@@ -69,11 +60,7 @@ export default function SignUp() {
     formState: { errors, isValid },
   } = methods;
 
-  const email = watch('email');
   const password = watch('password');
-  const first_name = watch('first_name');
-  const last_name = watch('last_name');
-  const acceptTerms = watch('acceptTerms');
 
   const handleSignUp = async (values: SignUpForm) => {
     try {
@@ -92,10 +79,9 @@ export default function SignUp() {
         return;
       }
 
-      console.log('before createUser');
-      await createUser(
+      const createdUser = await createUser(
         db,
-        values.first_name + ' ' + values.last_name,
+        values.userName,
         values.email.toLowerCase(),
         values.password
       );
@@ -108,11 +94,10 @@ export default function SignUp() {
         body: JSON.stringify({
           email: values.email.toLowerCase(),
           password: values.password,
-          firstName: values.first_name,
-          lastName: values.last_name,
+          userName: values.userName,
+          userId: createdUser.userId,
         }),
       });
-      console.log('after fetch');
 
       toast({
         title: 'Account created successfully',
@@ -126,17 +111,6 @@ export default function SignUp() {
       });
       console.error('Error creating account:', err);
     }
-  };
-
-  const getErrorMessage = () => {
-    if (errors.first_name?.message && errors.last_name?.message) {
-      return 'First and last name required';
-    } else if (errors.first_name?.message) {
-      return errors.first_name.message;
-    } else if (errors.last_name?.message) {
-      return errors.last_name.message;
-    }
-    return '';
   };
 
   return (
@@ -159,34 +133,18 @@ export default function SignUp() {
 
       <FormProvider {...methods}>
         <Form onSubmit={handleSubmit(handleSignUp)} className="space-y-5">
-          <div className="flex items-end">
-            <InputField
-              labelText="Name"
-              placeholder="First Name"
-              corners="sharpRight"
-              feedbackType={
-                errors.first_name?.message || errors.last_name?.message
-                  ? 'error'
-                  : 'none'
-              }
-              {...register('first_name')}
-            />
-            <InputField
-              placeholder="Last Name"
-              corners="sharpLeft"
-              feedbackType={
-                errors.first_name?.message || errors.last_name?.message
-                  ? 'error'
-                  : 'none'
-              }
-              {...register('last_name')}
-            />
-          </div>
-          <div className="flex">
-            <p className="text-error-600 dark:text-error-400 body-small-regular mt-[-16px]">
-              {getErrorMessage()}
-            </p>
-          </div>
+          <InputField
+            labelText="Username"
+            placeholder="Enter your username"
+            feedbackType={errors.userName?.message ? 'error' : 'none'}
+            feedback={errors.userName?.message}
+            trailIcon={
+              errors.userName?.message && (
+                <HiOutlineExclamationCircle className="text-base text-error-500" />
+              )
+            }
+            {...register('userName')}
+          />
           <InputField
             labelText="Email"
             placeholder="Enter your email"
@@ -207,7 +165,6 @@ export default function SignUp() {
             feedback={errors.password?.message}
             {...register('password')}
           />
-
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <div
@@ -224,7 +181,6 @@ export default function SignUp() {
                 Must be at least 8 characters
               </span>
             </div>
-
             <div className="flex items-center gap-2">
               <div
                 className={classNames(
@@ -240,7 +196,6 @@ export default function SignUp() {
                 Must contain one special character
               </span>
             </div>
-
             <div className="flex items-center gap-2">
               <div
                 className={classNames(
@@ -257,7 +212,6 @@ export default function SignUp() {
               </span>
             </div>
           </div>
-
           <Button type="submit" label="Get started" disabled={!isValid} />
         </Form>
       </FormProvider>

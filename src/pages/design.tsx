@@ -1,6 +1,6 @@
 import type { NextPage } from 'next';
 import 'tailwindcss/tailwind.css';
-import Button from '@/components/ui/Button';
+import Button from '@/components/Button';
 import {
   HiArrowLeft,
   HiArrowRight,

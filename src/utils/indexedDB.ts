@@ -292,6 +292,7 @@ export async function populateDB(
         post.retweetFrom = {
           postId: randomPost.id!,
           postDate: randomPost.postDate,
+          post: randomPost.post,
           tagged: randomPost.tagged,
           userId: randomPost.userId,
           userName: users.find((u) => u.userId === randomPost.userId)!.userName,
@@ -698,7 +699,7 @@ export async function createUser(
   userName: string,
   email: string,
   password: string
-): Promise<void> {
+): Promise<User> {
   const encodedPassword = btoa(password);
   const dateJoined = new Date();
   const themePreference = 'system';
@@ -767,6 +768,7 @@ export async function createUser(
   }
 
   await updateUser(db, newUser);
+  return newUser;
 }
 function getRandomDate(start: Date, end: Date): Date {
   return new Date(

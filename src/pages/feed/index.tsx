@@ -9,7 +9,7 @@ import {
 import { useRouter } from 'next/router';
 import { useEffect, useState, useRef } from 'react';
 import { Post, User } from '@/utils/interfaces';
-import PostCard from '@/components/PostCard'; // Adjust the import path if necessary
+import PostCard from '@/components/PostCard';
 
 const sessions = [
   {
@@ -102,38 +102,42 @@ export default function Feed() {
   return (
     <UserLayout sessions={sessions}>
       <div className="p-4">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex space-x-4">
-            <button
-              className={`px-4 py-2 ${
-                feedType === 'all'
-                  ? 'font-bold border-b-2 border-primary-600'
-                  : 'text-gray-light-600 dark:text-gray-dark-400'
-              }`}
-              onClick={() => handleToggle('all')}
-            >
-              All
-            </button>
-            <button
-              className={`px-4 py-2 ${
-                feedType === 'following'
-                  ? 'font-bold border-b-2 border-primary-600'
-                  : 'text-gray-light-600 dark:text-gray-dark-400'
-              }`}
-              onClick={() => handleToggle('following')}
-            >
-              Following
-            </button>
+        <div className="sticky top-0 z-10 bg-white dark:bg-gray-dark-950">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex space-x-4">
+              <button
+                className={`px-4 py-2 ${
+                  feedType === 'all'
+                    ? 'border-b-2 border-primary-600'
+                    : 'text-gray-light-600 dark:text-gray-dark-400'
+                }`}
+                onClick={() => handleToggle('all')}
+              >
+                All
+              </button>
+              <button
+                className={`px-4 py-2 ${
+                  feedType === 'following'
+                    ? 'border-b-2 border-primary-600'
+                    : 'text-gray-light-600 dark:text-gray-dark-400'
+                }`}
+                onClick={() => handleToggle('following')}
+              >
+                Following
+              </button>
+            </div>
           </div>
         </div>
         <div className="overflow-y-auto scrollbar scrollbar-thumb-gray-light-200 dark:scrollbar-thumb-gray-dark-700 scrollbar-thumb-rounded-full scrollbar-h-96 scrollbar-w-2">
           {(feedType === 'all' ? allPosts : followingPosts).map(
             ({ post, user }) => (
               <PostCard
-                key={post.id}
+                key={post?.id}
                 post={post}
                 user={user}
-                sessionUserId={21}
+                sessionUserId={session.userId}
+                sessionUserName={session.userName}
+                sessionUserEmail={session.email}
               />
             )
           )}

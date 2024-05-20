@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import Button from '../ui/Button';
+import Button from '../Button';
 import { removeLocalStorage } from '@/utils/localStorage';
 import { useRouter } from 'next/navigation';
 import { Close } from '../Icons/Close';

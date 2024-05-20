@@ -278,14 +278,14 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
       <div className="rounded-full h-8 w-8 border border-gray-light-400 dark:border-gray-dark-800 flex items-center justify-center relative">
         <div className="bg-success-500 rounded-full h-[10px] w-[10px] absolute right-1 bottom-1 transform translate-y-1/2 translate-x-1/2" />
         <span className="body-small-semiBold text-gray-light-500 dark:text-gray-dark-400">
-          {getInitials(session?.name)}
+          {getInitials(session?.userName)}
         </span>
       </div>
 
       {isCollapsed && (
         <div className="flex flex-col justify-center mr-5 w-20 flex-1 ml-2">
           <p className="truncate text-body-small font-semibold dark:text-gray-dark-300">
-            {session?.name}
+            {session?.userName}
           </p>
         </div>
       )}
