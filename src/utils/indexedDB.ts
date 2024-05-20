@@ -8,6 +8,7 @@ import {
   Like,
   Comment,
 } from '@/utils/interfaces';
+
 const STORE_NAMES = {
   users: 'users',
   following: 'following',
@@ -16,6 +17,7 @@ const STORE_NAMES = {
   likes: 'likes',
   comments: 'comments',
 };
+
 import {
   postsOptions,
   firstNameOptions,
@@ -24,25 +26,41 @@ import {
 } from '@/data/index';
 
 const inMemoryDB: { [key: string]: any } = {
-  [STORE_NAMES.users]: [],
-  [STORE_NAMES.following]: [],
-  [STORE_NAMES.posts]: [],
-  [STORE_NAMES.retweets]: [],
-  [STORE_NAMES.likes]: [],
-  [STORE_NAMES.comments]: [],
+  [STORE_NAMES.users]: [] as User[],
+  [STORE_NAMES.following]: [] as Following[],
+  [STORE_NAMES.posts]: [] as Post[],
+  [STORE_NAMES.retweets]: [] as Retweet[],
+  [STORE_NAMES.likes]: [] as Like[],
+  [STORE_NAMES.comments]: [] as Comment[],
 };
 
-export async function getAllPosts(db: any): Promise<any[]> {
-  const posts = await new Promise<any[]>((resolve, reject) => {
+export async function getAllPosts(
+  db: IDBDatabase | typeof inMemoryDB,
+  offset: number,
+  limit: number
+): Promise<{ post: Post; user: User }[]> {
+  const posts: Post[] = await new Promise<Post[]>((resolve, reject) => {
     const transaction = db.transaction([STORE_NAMES.posts], 'readonly');
     const store = transaction.objectStore(STORE_NAMES.posts);
-    const request = store.getAll();
+    const request = store.openCursor(null, 'prev'); // Open cursor in reverse order for descending sort
 
-    request.onsuccess = () => {
-      resolve(request.result);
+    const result: Post[] = [];
+    let count = 0;
+
+    request.onsuccess = (event: Event) => {
+      const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+      if (cursor) {
+        if (count >= offset && result.length < limit) {
+          result.push(cursor.value as Post);
+        }
+        count++;
+        cursor.continue();
+      } else {
+        resolve(result);
+      }
     };
 
-    request.onerror = (event: any) => {
+    request.onerror = (event: Event) => {
       console.error(
         'IndexedDB get posts error:',
         (event.target as IDBRequest).error
@@ -53,15 +71,49 @@ export async function getAllPosts(db: any): Promise<any[]> {
     };
   });
 
+  const postUserPairs: { post: Post; user: User }[] = [];
+
   for (const post of posts) {
-    post.retweets = await countRetweets(db, post.id);
-    post.likes = await countLikes(db, post.id);
+    post.retweets = await countRetweets(db, post.id!);
+    post.likes = await countLikes(db, post.id!);
+    const user = await getUserByEmail(db, post.email);
+    postUserPairs.push({ post, user });
   }
 
-  return posts;
+  return postUserPairs;
 }
 
-function countRetweets(db: any, postId: number): Promise<number> {
+function getUserByEmail(
+  db: IDBDatabase | typeof inMemoryDB,
+  email: string
+): Promise<User> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.users], 'readonly');
+    const store = transaction.objectStore(STORE_NAMES.users);
+    const request = store.get(email);
+
+    request.onsuccess = () => {
+      resolve(request.result as User);
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB get user by email error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB get user by email error: ${
+          (event.target as IDBRequest).error
+        }`
+      );
+    };
+  });
+}
+
+function countRetweets(
+  db: IDBDatabase | typeof inMemoryDB,
+  postId: number
+): Promise<number> {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAMES.retweets], 'readonly');
     const store = transaction.objectStore(STORE_NAMES.retweets);
@@ -69,7 +121,7 @@ function countRetweets(db: any, postId: number): Promise<number> {
     const request = index.getAll(postId);
 
     request.onsuccess = () => {
-      resolve(request.result.length);
+      resolve((request.result as Retweet[]).length);
     };
 
     request.onerror = (event: any) => {
@@ -84,7 +136,10 @@ function countRetweets(db: any, postId: number): Promise<number> {
   });
 }
 
-function countLikes(db: any, postId: number): Promise<number> {
+function countLikes(
+  db: IDBDatabase | typeof inMemoryDB,
+  postId: number
+): Promise<number> {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAMES.likes], 'readonly');
     const store = transaction.objectStore(STORE_NAMES.likes);
@@ -92,7 +147,7 @@ function countLikes(db: any, postId: number): Promise<number> {
     const request = index.getAll(postId);
 
     request.onsuccess = () => {
-      resolve(request.result.length);
+      resolve((request.result as Like[]).length);
     };
 
     request.onerror = (event: any) => {
@@ -108,46 +163,71 @@ function countLikes(db: any, postId: number): Promise<number> {
 }
 
 export async function getPostsFromFollowedUsers(
-  db: any,
-  email: string
-): Promise<any[]> {
-  const followings = await new Promise<any[]>((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAMES.following], 'readonly');
-    const store = transaction.objectStore(STORE_NAMES.following);
-    const index = store.index('following');
-    const request = index.getAll(email);
+  db: IDBDatabase | typeof inMemoryDB,
+  email: string,
+  offset: number,
+  limit: number
+): Promise<{ post: Post; user: User }[]> {
+  const followings = await new Promise<Following[]>((resolve, reject) => {
+    try {
+      const transaction = db.transaction([STORE_NAMES.following], 'readonly');
+      const store = transaction.objectStore(STORE_NAMES.following);
+      const index = store.index('following');
+      const request = index.getAll(email);
 
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
+      request.onsuccess = () => {
+        resolve(request.result as Following[]);
+      };
 
-    request.onerror = (event: any) => {
-      console.error(
-        'IndexedDB get followings error:',
-        (event.target as IDBRequest).error
-      );
-      reject(
-        `IndexedDB get followings error: ${(event.target as IDBRequest).error}`
-      );
-    };
+      request.onerror = (event: any) => {
+        console.error(
+          'IndexedDB get followings error:',
+          (event.target as IDBRequest).error
+        );
+        reject(
+          `IndexedDB get followings error: ${
+            (event.target as IDBRequest).error
+          }`
+        );
+      };
+    } catch (error) {
+      console.error('Error during getPostsFromFollowedUsers:', error);
+      reject(error);
+    }
   });
 
-  const followedEmails = followings.map((following: any) => following.followed);
-  const posts: any[] = [];
+  const followedEmails = followings.map((following) => following.followed);
+  const allPosts: Post[] = [];
 
   for (const followedEmail of followedEmails) {
     const userPosts = await getPostsByUser(db, followedEmail);
-    for (const post of userPosts) {
-      post.retweets = await countRetweets(db, post.id);
-      post.likes = await countLikes(db, post.id);
-    }
-    posts.push(...userPosts);
+    allPosts.push(...userPosts);
   }
 
-  return posts;
+  // Sort by postDate in descending order
+  allPosts.sort(
+    (a, b) => new Date(b.postDate).getTime() - new Date(a.postDate).getTime()
+  );
+
+  // Paginate the results
+  const paginatedPosts = allPosts.slice(offset, offset + limit);
+
+  const postUserPairs: { post: Post; user: User }[] = [];
+
+  for (const post of paginatedPosts) {
+    post.retweets = await countRetweets(db, post.id!);
+    post.likes = await countLikes(db, post.id!);
+    const user = await getUserByEmail(db, post.email);
+    postUserPairs.push({ post, user });
+  }
+
+  return postUserPairs;
 }
 
-function getPostsByUser(db: any, email: string): Promise<any[]> {
+function getPostsByUser(
+  db: IDBDatabase | typeof inMemoryDB,
+  email: string
+): Promise<Post[]> {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAMES.posts], 'readonly');
     const store = transaction.objectStore(STORE_NAMES.posts);
@@ -155,7 +235,7 @@ function getPostsByUser(db: any, email: string): Promise<any[]> {
     const request = index.getAll(email);
 
     request.onsuccess = () => {
-      resolve(request.result);
+      resolve(request.result as Post[]);
     };
 
     request.onerror = (event: any) => {
@@ -170,8 +250,10 @@ function getPostsByUser(db: any, email: string): Promise<any[]> {
   });
 }
 
-export async function populateDB(db: any): Promise<void> {
-  const users = [];
+export async function populateDB(
+  db: IDBDatabase | typeof inMemoryDB
+): Promise<void> {
+  const users: User[] = [];
   for (let i = 1; i <= 500; i++) {
     const email = `user${i}@example.com`;
     const firstName =
@@ -181,7 +263,7 @@ export async function populateDB(db: any): Promise<void> {
     const password = btoa('123456');
     const themePreference = 'light';
 
-    const user = {
+    const user: User = {
       email,
       firstName,
       lastName,
@@ -192,12 +274,12 @@ export async function populateDB(db: any): Promise<void> {
     await addUser(db, user);
   }
 
-  const followings = [];
+  const followings: Following[] = [];
   let followingId = 1;
   for (let user of users) {
     const userEmail = user.email;
     const followingCount = Math.floor(Math.random() * 16) + 5;
-    const followedUsers = new Set();
+    const followedUsers = new Set<string>();
 
     while (followedUsers.size < followingCount) {
       const randomUser = users[Math.floor(Math.random() * users.length)];
@@ -217,7 +299,7 @@ export async function populateDB(db: any): Promise<void> {
 
   await addFollowings(db, followings);
 
-  const posts = [];
+  const posts: Post[] = [];
   let postId = 1;
   for (let user of users) {
     const userEmail = user.email;
@@ -226,7 +308,7 @@ export async function populateDB(db: any): Promise<void> {
     for (let i = 0; i < postCount; i++) {
       const postString =
         postsOptions[Math.floor(Math.random() * postsOptions.length)];
-      const tagged = [] as any;
+      const tagged: string[] = [];
       const tagCount = Math.floor(Math.random() * 3);
 
       for (let j = 0; j < tagCount; j++) {
@@ -244,7 +326,7 @@ export async function populateDB(db: any): Promise<void> {
         new Date(2024, 4, 1)
       );
 
-      const post = {
+      const post: Post = {
         id: postId++,
         email: userEmail,
         post: postString,
@@ -257,7 +339,7 @@ export async function populateDB(db: any): Promise<void> {
 
   await addPosts(db, posts);
 
-  const retweets = [];
+  const retweets: Retweet[] = [];
   for (let i = 0; i < 200; i++) {
     const randomUser = users[Math.floor(Math.random() * users.length)];
     const randomPost = posts[Math.floor(Math.random() * posts.length)];
@@ -265,24 +347,24 @@ export async function populateDB(db: any): Promise<void> {
 
     retweets.push({
       userId: randomUser.email,
-      postId: randomPost.id,
+      postId: randomPost.id!,
       retweetedDate,
     });
   }
 
   await addRetweets(db, retweets);
 
-  const likes = [];
+  const likes: Like[] = [];
   for (let user of users) {
-    const likedPosts = new Set();
+    const likedPosts = new Set<number>();
     while (likedPosts.size < 20) {
       const randomPost = posts[Math.floor(Math.random() * posts.length)];
-      if (!likedPosts.has(randomPost.id)) {
-        likedPosts.add(randomPost.id);
+      if (!likedPosts.has(randomPost.id!)) {
+        likedPosts.add(randomPost.id!);
         const likeDate = addRandomDays(randomPost.postDate, 1, 2);
         likes.push({
           userId: user.email,
-          postId: randomPost.id,
+          postId: randomPost.id!,
           likeDate,
         });
       }
@@ -291,7 +373,7 @@ export async function populateDB(db: any): Promise<void> {
 
   await addLikes(db, likes);
 
-  const comments = [];
+  const comments: Comment[] = [];
   for (let post of posts) {
     const commentCount = Math.floor(Math.random() * 3) + 1;
 
@@ -303,7 +385,7 @@ export async function populateDB(db: any): Promise<void> {
 
       comments.push({
         userId: randomUser.email,
-        postId: post.id,
+        postId: post.id!,
         comment,
         commentDate,
       });
@@ -313,7 +395,7 @@ export async function populateDB(db: any): Promise<void> {
   await addComments(db, comments);
 }
 
-export function openDB(): Promise<any> {
+export function openDB(): Promise<IDBDatabase | typeof inMemoryDB> {
   if (typeof window === 'undefined' || typeof indexedDB === 'undefined') {
     return Promise.resolve(inMemoryDB);
   }
@@ -323,21 +405,37 @@ export function openDB(): Promise<any> {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
+      const transaction = (event.target as IDBOpenDBRequest).transaction;
 
       if (!db.objectStoreNames.contains(STORE_NAMES.users)) {
         db.createObjectStore(STORE_NAMES.users, { keyPath: 'email' });
       }
       if (!db.objectStoreNames.contains(STORE_NAMES.following)) {
-        db.createObjectStore(STORE_NAMES.following, {
+        const followingStore = db.createObjectStore(STORE_NAMES.following, {
           keyPath: 'id',
           autoIncrement: true,
         });
+        followingStore.createIndex('following', 'following', { unique: false });
+        followingStore.createIndex('followed', 'followed', { unique: false });
+      } else if (transaction) {
+        const followingStore = transaction.objectStore(STORE_NAMES.following);
+        if (!followingStore.indexNames.contains('following')) {
+          followingStore.createIndex('following', 'following', {
+            unique: false,
+          });
+        }
+        if (!followingStore.indexNames.contains('followed')) {
+          followingStore.createIndex('followed', 'followed', {
+            unique: false,
+          });
+        }
       }
       if (!db.objectStoreNames.contains(STORE_NAMES.posts)) {
-        db.createObjectStore(STORE_NAMES.posts, {
+        const postsStore = db.createObjectStore(STORE_NAMES.posts, {
           keyPath: 'id',
           autoIncrement: true,
         });
+        postsStore.createIndex('email', 'email', { unique: false });
       }
       if (!db.objectStoreNames.contains(STORE_NAMES.retweets)) {
         const retweetsStore = db.createObjectStore(STORE_NAMES.retweets, {
@@ -345,6 +443,7 @@ export function openDB(): Promise<any> {
           autoIncrement: true,
         });
         retweetsStore.createIndex('postId', 'postId', { unique: false });
+        retweetsStore.createIndex('userId', 'userId', { unique: false });
       }
       if (!db.objectStoreNames.contains(STORE_NAMES.likes)) {
         const likesStore = db.createObjectStore(STORE_NAMES.likes, {
@@ -352,6 +451,7 @@ export function openDB(): Promise<any> {
           autoIncrement: true,
         });
         likesStore.createIndex('postId', 'postId', { unique: false });
+        likesStore.createIndex('userId', 'userId', { unique: false });
       }
       if (!db.objectStoreNames.contains(STORE_NAMES.comments)) {
         db.createObjectStore(STORE_NAMES.comments, {
@@ -376,9 +476,12 @@ export function openDB(): Promise<any> {
   });
 }
 
-export function addUser(db: any, user: any): Promise<void> {
+export function addUser(
+  db: IDBDatabase | typeof inMemoryDB,
+  user: User
+): Promise<void> {
   if (db === inMemoryDB) {
-    db[STORE_NAMES.users].push(user);
+    (db as typeof inMemoryDB)[STORE_NAMES.users].push(user);
     return Promise.resolve();
   }
 
@@ -401,48 +504,12 @@ export function addUser(db: any, user: any): Promise<void> {
   });
 }
 
-export function addFollowings(db: any, followings: any[]): Promise<void> {
+export function addPosts(
+  db: IDBDatabase | typeof inMemoryDB,
+  posts: Post[]
+): Promise<void> {
   if (db === inMemoryDB) {
-    db[STORE_NAMES.following].push(...followings);
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAMES.following], 'readwrite');
-    const store = transaction.objectStore(STORE_NAMES.following);
-
-    followings.forEach((following) => {
-      const request = store.add(following);
-      request.onerror = (event: any) => {
-        console.error(
-          'IndexedDB add following error:',
-          (event.target as IDBRequest).error
-        );
-        reject(
-          `IndexedDB add following error: ${(event.target as IDBRequest).error}`
-        );
-      };
-    });
-
-    transaction.oncomplete = () => {
-      resolve();
-    };
-
-    transaction.onerror = (event: any) => {
-      console.error(
-        'IndexedDB transaction error:',
-        (event.target as IDBRequest).error
-      );
-      reject(
-        `IndexedDB transaction error: ${(event.target as IDBRequest).error}`
-      );
-    };
-  });
-}
-
-export function addPosts(db: any, posts: any[]): Promise<void> {
-  if (db === inMemoryDB) {
-    db[STORE_NAMES.posts].push(...posts);
+    (db as typeof inMemoryDB)[STORE_NAMES.posts].push(...posts);
     return Promise.resolve();
   }
 
@@ -479,9 +546,12 @@ export function addPosts(db: any, posts: any[]): Promise<void> {
   });
 }
 
-export function addRetweets(db: any, retweets: any[]): Promise<void> {
+export function addRetweets(
+  db: IDBDatabase | typeof inMemoryDB,
+  retweets: Retweet[]
+): Promise<void> {
   if (db === inMemoryDB) {
-    db[STORE_NAMES.retweets].push(...retweets);
+    (db as typeof inMemoryDB)[STORE_NAMES.retweets].push(...retweets);
     return Promise.resolve();
   }
 
@@ -518,9 +588,12 @@ export function addRetweets(db: any, retweets: any[]): Promise<void> {
   });
 }
 
-export function addLikes(db: any, likes: any[]): Promise<void> {
+export function addLikes(
+  db: IDBDatabase | typeof inMemoryDB,
+  likes: Like[]
+): Promise<void> {
   if (db === inMemoryDB) {
-    db[STORE_NAMES.likes].push(...likes);
+    (db as typeof inMemoryDB)[STORE_NAMES.likes].push(...likes);
     return Promise.resolve();
   }
 
@@ -557,9 +630,12 @@ export function addLikes(db: any, likes: any[]): Promise<void> {
   });
 }
 
-export function addComments(db: any, comments: any[]): Promise<void> {
+export function addComments(
+  db: IDBDatabase | typeof inMemoryDB,
+  comments: Comment[]
+): Promise<void> {
   if (db === inMemoryDB) {
-    db[STORE_NAMES.comments].push(...comments);
+    (db as typeof inMemoryDB)[STORE_NAMES.comments].push(...comments);
     return Promise.resolve();
   }
 
@@ -596,9 +672,9 @@ export function addComments(db: any, comments: any[]): Promise<void> {
   });
 }
 
-export function getUsers(db: any): Promise<any[]> {
+export function getUsers(db: IDBDatabase | typeof inMemoryDB): Promise<User[]> {
   if (db === inMemoryDB) {
-    return Promise.resolve(db[STORE_NAMES.users]);
+    return Promise.resolve((db as typeof inMemoryDB)[STORE_NAMES.users]);
   }
 
   return new Promise((resolve, reject) => {
@@ -607,7 +683,7 @@ export function getUsers(db: any): Promise<any[]> {
     const request = store.getAll();
 
     request.onsuccess = () => {
-      resolve(request.result);
+      resolve(request.result as User[]);
     };
 
     request.onerror = (event: any) => {
@@ -623,7 +699,7 @@ export function getUsers(db: any): Promise<any[]> {
 }
 
 export function updateUserThemePreference(
-  db: any,
+  db: IDBDatabase | typeof inMemoryDB,
   email: string,
   themePreference: string
 ): Promise<void> {
@@ -633,7 +709,7 @@ export function updateUserThemePreference(
     const request = store.get(email);
 
     request.onsuccess = () => {
-      const user = request.result;
+      const user = request.result as User;
       if (user) {
         user.themePreference = themePreference;
         const updateRequest = store.put(user);
@@ -669,7 +745,7 @@ export function updateUserThemePreference(
 }
 
 export async function createUser(
-  db: any,
+  db: IDBDatabase | typeof inMemoryDB,
   firstName: string,
   lastName: string,
   email: string,
@@ -677,7 +753,7 @@ export async function createUser(
 ): Promise<void> {
   const encodedPassword = btoa(password);
   const themePreference = 'system';
-  const user = {
+  const user: User = {
     email,
     firstName,
     lastName,
@@ -689,35 +765,26 @@ export async function createUser(
 }
 
 export async function createRandomFollowingsAndFollowers(
-  db: any,
+  db: IDBDatabase | typeof inMemoryDB,
   email: string
 ): Promise<void> {
-  console.log('Starting createRandomFollowingsAndFollowers');
-
   const transaction = db.transaction([STORE_NAMES.users], 'readonly');
   const store = transaction.objectStore(STORE_NAMES.users);
   const request = store.get(email);
 
   request.onsuccess = async () => {
-    console.log('Request success');
-    const newUser = request.result;
+    const newUser = request.result as User;
 
     if (newUser) {
-      console.log('New user found:', newUser);
-
-      const followings = [];
-      const followers = [];
-      let followingId = 1;
+      const followings: Following[] = [];
+      const followers: Following[] = [];
 
       const followingCount = Math.floor(Math.random() * 6) + 15;
-      console.log('Following count:', followingCount);
 
-      const followedUsers = new Set();
+      const followedUsers = new Set<string>();
 
       while (followedUsers.size < followingCount) {
-        console.log('Generating following:', followedUsers.size);
         const randomUser = await getRandomUser(db, email);
-        console.log('Random user for following:', randomUser);
 
         if (
           randomUser &&
@@ -725,23 +792,22 @@ export async function createRandomFollowingsAndFollowers(
           !followedUsers.has(randomUser.email)
         ) {
           followedUsers.add(randomUser.email);
-          followings.push({
-            id: followingId++,
+          const following = {
             following: email,
             followed: randomUser.email,
-          });
+          };
+          followings.push(following);
+          if (followings.length === 1) {
+          }
         }
       }
 
       const followerCount = Math.floor(Math.random() * 10) + 90;
-      console.log('Follower count:', followerCount);
 
-      const followerUsers = new Set();
+      const followerUsers = new Set<string>();
 
       while (followerUsers.size < followerCount) {
-        console.log('Generating follower:', followerUsers.size);
         const randomUser = await getRandomUser(db, email);
-        console.log('Random user for follower:', randomUser);
 
         if (
           randomUser &&
@@ -749,21 +815,18 @@ export async function createRandomFollowingsAndFollowers(
           !followerUsers.has(randomUser.email)
         ) {
           followerUsers.add(randomUser.email);
-          followers.push({
-            id: followingId++,
+          const follower = {
             following: randomUser.email,
             followed: email,
-          });
+          };
+          followers.push(follower);
+          if (followers.length === 1) {
+          }
         }
       }
 
-      console.log('Followings:', followings);
-      console.log('Followers:', followers);
-
       await addFollowings(db, [...followings, ...followers]);
-      console.log('Followings and followers added successfully');
     } else {
-      console.log('No user found with email:', email);
     }
   };
 
@@ -773,21 +836,62 @@ export async function createRandomFollowingsAndFollowers(
       (event.target as IDBRequest).error
     );
   };
-
-  console.log('End of createRandomFollowingsAndFollowers');
 }
 
-async function getRandomUser(db: any, excludeEmail: string): Promise<any> {
+export function addFollowings(
+  db: IDBDatabase | typeof inMemoryDB,
+  followings: Following[]
+): Promise<void> {
+  if (db === inMemoryDB) {
+    (db as typeof inMemoryDB)[STORE_NAMES.following].push(...followings);
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.following], 'readwrite');
+    const store = transaction.objectStore(STORE_NAMES.following);
+
+    followings.forEach((following) => {
+      const request = store.add(following);
+      request.onerror = (event: any) => {
+        console.error(
+          'IndexedDB add following error:',
+          (event.target as IDBRequest).error
+        );
+        reject(
+          `IndexedDB add following error: ${(event.target as IDBRequest).error}`
+        );
+      };
+    });
+
+    transaction.oncomplete = () => {
+      resolve();
+    };
+
+    transaction.onerror = (event: any) => {
+      console.error(
+        'IndexedDB transaction error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB transaction error: ${(event.target as IDBRequest).error}`
+      );
+    };
+  });
+}
+
+async function getRandomUser(
+  db: IDBDatabase | typeof inMemoryDB,
+  excludeEmail: string
+): Promise<User> {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAMES.users], 'readonly');
     const store = transaction.objectStore(STORE_NAMES.users);
     const request = store.getAll();
 
     request.onsuccess = () => {
-      const users = request.result;
-      const filteredUsers = users.filter(
-        (user: any) => user.email !== excludeEmail
-      );
+      const users = request.result as User[];
+      const filteredUsers = users.filter((user) => user.email !== excludeEmail);
       const randomUser =
         filteredUsers[Math.floor(Math.random() * filteredUsers.length)];
       resolve(randomUser);

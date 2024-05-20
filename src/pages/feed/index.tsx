@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
-import { useSession } from '@/hooks/useSession';
-import { useRouter } from 'next/router';
-import { InstitutionalLayout } from '@/layouts/InstitutionalLayout';
 import { HomeLine } from '@/components/Icons/HomeLine';
+import { useSession } from '@/hooks/useSession';
+import { InstitutionalLayout } from '@/layouts/InstitutionalLayout';
 import {
-  openDB,
   getAllPosts,
   getPostsFromFollowedUsers,
+  openDB,
 } from '@/utils/indexedDB';
+import { format } from 'date-fns';
+import { useRouter } from 'next/router';
+import { useEffect, useState, useRef } from 'react';
+import { Post, User } from '@/utils/interfaces';
+import { FaRetweet, FaHeart } from 'react-icons/fa';
 
 const sessions = [
   {
@@ -21,26 +24,17 @@ const sessions = [
   },
 ];
 
-const posts = [
-  {
-    id: 1,
-    user: {
-      name: 'John Doe',
-      handle: '@johndoe',
-      avatar: '/path/to/avatar.jpg',
-    },
-    content: 'Just had the best coffee ever!',
-    timestamp: '2h',
-    replies: 10,
-    retweets: 5,
-    likes: 20,
-  },
-];
-
 export default function Feed() {
   const { session } = useSession();
   const router = useRouter();
   const [feedType, setFeedType] = useState('all');
+  const [allPosts, setAllPosts] = useState<{ post: Post; user: User }[]>([]);
+  const [followingPosts, setFollowingPosts] = useState<
+    { post: Post; user: User }[]
+  >([]);
+  const [offset, setOffset] = useState(0);
+  const limit = 20;
+  const loaderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const { feed } = router.query;
@@ -56,35 +50,55 @@ export default function Feed() {
       const db = await openDB();
 
       if (feedType === 'all') {
-        const allPosts = await getAllPosts(db);
-        console.log('All posts:', allPosts);
+        const newPosts = await getAllPosts(db, offset, limit);
+        setAllPosts((prevPosts) => [...prevPosts, ...newPosts]);
       } else if (feedType === 'following' && session) {
-        const followedPosts = await getPostsFromFollowedUsers(
+        const newPosts = await getPostsFromFollowedUsers(
           db,
-          session.email
+          session.email,
+          offset,
+          limit
         );
-        console.log('Followed users posts:', followedPosts);
+        setFollowingPosts((prevPosts) => [...prevPosts, ...newPosts]);
       }
     };
 
     fetchData();
-  }, [feedType, session]);
+  }, [feedType, session, offset]);
 
   useEffect(() => {
-    const { feed } = router.query;
-    if (feed === 'following') {
-      setFeedType('following');
-    } else {
-      setFeedType('all');
-    }
-  }, [router.query]);
+    const handleObserver = (entries: IntersectionObserverEntry[]) => {
+      const target = entries[0];
+      if (target.isIntersecting) {
+        setOffset((prevOffset) => prevOffset + limit);
+      }
+    };
+
+    const option = {
+      root: null,
+      rootMargin: '20px',
+      threshold: 1.0,
+    };
+
+    const observer = new IntersectionObserver(handleObserver, option);
+
+    if (loaderRef.current) observer.observe(loaderRef.current);
+
+    return () => {
+      if (loaderRef.current) observer.unobserve(loaderRef.current);
+    };
+  }, []);
 
   const handleToggle = (type: string) => {
     setFeedType(type);
+    setOffset(0);
+    if (type === 'all') {
+      setAllPosts([]);
+    } else {
+      setFollowingPosts([]);
+    }
     router.push(`/feed?feed=${type}`);
   };
-
-  console.log('session', session);
 
   return (
     <InstitutionalLayout sessions={sessions}>
@@ -113,38 +127,46 @@ export default function Feed() {
             </button>
           </div>
         </div>
-        <div>
-          {posts.map((post) => (
-            <div
-              key={post.id}
-              className="border-b border-gray-light-200 dark:border-gray-dark-800 p-4"
-            >
-              <div className="flex items-center mb-2">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-bold text-gray-light-900 dark:text-white">
-                      {post.user.name}
-                    </span>
-                    <span className="text-gray-light-500 dark:text-gray-dark-400">
-                      {post.user.handle}
+        <div className="overflow-y-auto scrollbar scrollbar-thumb-gray-light-200 dark:scrollbar-thumb-gray-dark-700 scrollbar-thumb-rounded-full scrollbar-h-96 scrollbar-w-2">
+          {(feedType === 'all' ? allPosts : followingPosts).map(
+            ({ post, user }) => (
+              <div
+                key={post.id}
+                className="animate-fadeIn border-b border-gray-light-200 dark:border-gray-dark-800 p-4 hover:bg-gray-light-50 dark:hover:bg-gray-dark-800 transition-colors"
+              >
+                <div className="flex items-center mb-2">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold text-gray-light-900 dark:text-white">
+                        {user.firstName} {user.lastName}
+                      </span>
+                      <span className="text-gray-light-500 dark:text-gray-dark-400">
+                        @{post.email.split('@')[0]}
+                      </span>
+                    </div>
+                    <span className="text-gray-light-400 dark:text-gray-dark-500 text-sm">
+                      {format(new Date(post.postDate), 'MMMM dd, yyyy')}
                     </span>
                   </div>
-                  <span className="text-gray-light-400 dark:text-gray-dark-500 text-sm">
-                    {post.timestamp}
+                </div>
+                <p className="text-gray-light-900 dark:text-white mb-3">
+                  {post.post}
+                </p>
+                <div className="flex space-x-4 text-gray-light-500 dark:text-gray-dark-400 text-sm">
+                  <span className="flex items-center space-x-1 hover:text-green-600 transition-colors cursor-pointer">
+                    <FaRetweet />
+                    <span>{post.retweets}</span>
+                  </span>
+                  <span className="flex items-center space-x-1 hover:text-red-600 transition-colors cursor-pointer">
+                    <FaHeart />
+                    <span>{post.likes}</span>
                   </span>
                 </div>
               </div>
-              <p className="text-gray-light-900 dark:text-white mb-3">
-                {post.content}
-              </p>
-              <div className="flex space-x-4 text-gray-light-500 dark:text-gray-dark-400 text-sm">
-                <span>{post.replies} Replies</span>
-                <span>{post.retweets} Retweets</span>
-                <span>{post.likes} Likes</span>
-              </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
+        <div ref={loaderRef} className="loading" />
       </div>
     </InstitutionalLayout>
   );
