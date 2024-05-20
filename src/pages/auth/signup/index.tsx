@@ -5,7 +5,12 @@ import { Container } from '@/components/ui/Container';
 import { Form } from '@/components/ui/Form';
 import InputField from '@/components/ui/Input';
 import { useToast } from '@/hooks/useToast';
-import { createUser, getUsers, openDB } from '@/utils/indexedDB';
+import {
+  createUser,
+  getUsers,
+  openDB,
+  createRandomFollowingsAndFollowers,
+} from '@/utils/indexedDB';
 import { zodResolver } from '@hookform/resolvers/zod';
 import classNames from 'classnames';
 import Head from 'next/head';
@@ -100,7 +105,6 @@ export default function SignUp() {
         values.password
       );
 
-      // Call your API to set cookies
       await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
@@ -113,6 +117,8 @@ export default function SignUp() {
           lastName: values.last_name,
         }),
       });
+
+      await createRandomFollowingsAndFollowers(db, values.email.toLowerCase());
 
       toast({
         title: 'Account created successfully',

@@ -68,7 +68,7 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
 
   const handleThemeChange = async (themePreference: ThemePreference) => {
     setTheme(themePreference.toLowerCase());
-    updateSessionInfo(session?.institutionName, themePreference);
+    updateSessionInfo(themePreference);
 
     try {
       const db = await openDB();
@@ -282,9 +282,6 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
         <div className="flex flex-col justify-center mr-5 w-20 flex-1 ml-2">
           <p className="truncate text-body-small font-semibold dark:text-gray-dark-300">
             {session?.name}
-          </p>
-          <p className="truncate text-body-small font-normal max-w-[220px] dark:text-gray-dark-400">
-            {session?.institutionName}
           </p>
         </div>
       )}

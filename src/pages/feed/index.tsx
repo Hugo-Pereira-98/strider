@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useSession } from '@/hooks/useSession';
 import { useRouter } from 'next/router';
-import { InstitutionalLayout } from '../../layouts/InstitutionalLayout';
-import { HomeLine } from '../../components/Icons/HomeLine';
+import { InstitutionalLayout } from '@/layouts/InstitutionalLayout';
+import { HomeLine } from '@/components/Icons/HomeLine';
+import {
+  openDB,
+  getAllPosts,
+  getPostsFromFollowedUsers,
+} from '@/utils/indexedDB';
 
 const sessions = [
   {
@@ -32,8 +38,37 @@ const posts = [
 ];
 
 export default function Feed() {
+  const { session } = useSession();
   const router = useRouter();
   const [feedType, setFeedType] = useState('all');
+
+  useEffect(() => {
+    const { feed } = router.query;
+    if (feed === 'following') {
+      setFeedType('following');
+    } else {
+      setFeedType('all');
+    }
+  }, [router.query]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const db = await openDB();
+
+      if (feedType === 'all') {
+        const allPosts = await getAllPosts(db);
+        console.log('All posts:', allPosts);
+      } else if (feedType === 'following' && session) {
+        const followedPosts = await getPostsFromFollowedUsers(
+          db,
+          session.email
+        );
+        console.log('Followed users posts:', followedPosts);
+      }
+    };
+
+    fetchData();
+  }, [feedType, session]);
 
   useEffect(() => {
     const { feed } = router.query;
@@ -48,6 +83,8 @@ export default function Feed() {
     setFeedType(type);
     router.push(`/feed?feed=${type}`);
   };
+
+  console.log('session', session);
 
   return (
     <InstitutionalLayout sessions={sessions}>

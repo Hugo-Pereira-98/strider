@@ -28,7 +28,6 @@ interface SessionProps {
   refreshToken: () => Promise<void>;
   session: any;
   updateSessionInfo: (
-    institutionName?: string,
     themePreference?: string,
     sidebarCollapsed?: boolean
   ) => void;
@@ -67,11 +66,7 @@ export function useSession(): SessionProps {
   );
 
   const updateSessionInfo = useCallback(
-    (
-      institutionName?: string,
-      themePreference?: string,
-      sidebarCollapsed?: boolean
-    ) => {
+    (themePreference?: string, sidebarCollapsed?: boolean) => {
       const currentSession = getCookie('posterr-id')
         ? JSON.parse(getCookie('posterr-id') as string)
         : null;
@@ -79,7 +74,7 @@ export function useSession(): SessionProps {
       if (currentSession) {
         const updatedSession = {
           ...currentSession,
-          institutionName,
+
           themePreference,
           sidebarCollapsed:
             sidebarCollapsed !== undefined

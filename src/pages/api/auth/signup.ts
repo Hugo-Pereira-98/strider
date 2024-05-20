@@ -1,7 +1,12 @@
 import { setCookie } from 'cookies-next';
 import jwt from 'jsonwebtoken';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { openDB, createUser, getUsers } from '../../../utils/indexedDB';
+import {
+  openDB,
+  createUser,
+  getUsers,
+  createRandomFollowingsAndFollowers,
+} from '../../../utils/indexedDB';
 
 export const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') {
@@ -31,8 +36,8 @@ export const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       { expiresIn: '1h' }
     );
 
-    const refreshExpiresIn = 30 * 24 * 60 * 60; // 30 days
-    const accessExpiresIn = 60 * 60; // 1 hour
+    const refreshExpiresIn = 30 * 24 * 60 * 60;
+    const accessExpiresIn = 60 * 60;
 
     const userIdData = {
       email: emailLowerCase,

@@ -1,16 +1,14 @@
 import classNames from 'classnames';
-import { useTheme } from 'next-themes';
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSidebar } from '../../contexts/SidebarContext';
-import { useSession } from '../../hooks/useSession';
-import { Activity } from '../Icons/Activity';
+import { useEffect, useRef, useState } from 'react';
+import { useSidebar } from '@/contexts/SidebarContext';
+import { useSession } from '@/hooks/useSession';
 import { Building2 } from '../Icons/Building2';
 import { Candlestick } from '../Icons/Candlestick';
 import { ChevronRight } from '../Icons/ChevronRight';
+import { LineChartUp } from '../Icons/LineChartUp';
 import { Posterr } from '../Icons/Posterr';
 import { PosterrLogo } from '../Icons/PosterrLogo';
-import { LineChartUp } from '../Icons/LineChartUp';
 import { SearchBarModal } from '../Modal/SearchBarModal';
 import SettingsCard from '../SettingsCard';
 import SearchButton from '../ui/SearchButton';
@@ -19,12 +17,10 @@ import { SidebarLink } from './SidebarLink';
 export function Sidebar() {
   const sidebar = useRef<any>(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const { setTheme } = useTheme();
   const [isButtonVisible, setIsButtonVisible] = useState(false);
   const buttonVisibilityTimeout = useRef<number | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
-  const { sidebarOpen, setSidebarOpen, isCollapsed, setIsCollapsed } =
-    useSidebar();
+  const { sidebarOpen, isCollapsed, setIsCollapsed } = useSidebar();
 
   const { session, updateSessionInfo } = useSession();
 
@@ -104,11 +100,7 @@ export function Sidebar() {
     const newCollapsedState = !isCollapsed;
     setIsCollapsed(newCollapsedState);
 
-    updateSessionInfo(
-      session.institutionName,
-      session.themePreference,
-      newCollapsedState
-    );
+    updateSessionInfo(session.themePreference, newCollapsedState);
   };
 
   return (

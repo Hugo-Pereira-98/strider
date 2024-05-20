@@ -24,6 +24,133 @@ const inMemoryDB: { [key: string]: any } = {
   [STORE_NAMES.comments]: [],
 };
 
+export function getAllPosts(db: any): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.posts], 'readonly');
+    const store = transaction.objectStore(STORE_NAMES.posts);
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB get posts error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB get posts error: ${(event.target as IDBRequest).error}`
+      );
+    };
+  });
+}
+
+function countRetweets(db: any, postId: number): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.retweets], 'readonly');
+    const store = transaction.objectStore(STORE_NAMES.retweets);
+    const index = store.index('postId');
+    const request = index.getAll(postId);
+
+    request.onsuccess = () => {
+      resolve(request.result.length);
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB count retweets error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB count retweets error: ${(event.target as IDBRequest).error}`
+      );
+    };
+  });
+}
+
+function countLikes(db: any, postId: number): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.likes], 'readonly');
+    const store = transaction.objectStore(STORE_NAMES.likes);
+    const index = store.index('postId');
+    const request = index.getAll(postId);
+
+    request.onsuccess = () => {
+      resolve(request.result.length);
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB count likes error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB count likes error: ${(event.target as IDBRequest).error}`
+      );
+    };
+  });
+}
+
+export async function getPostsFromFollowedUsers(
+  db: any,
+  email: string
+): Promise<any[]> {
+  const transaction = db.transaction([STORE_NAMES.following], 'readonly');
+  const store = transaction.objectStore(STORE_NAMES.following);
+  const request = store.index('following').getAll(email);
+
+  return new Promise((resolve, reject) => {
+    request.onsuccess = async () => {
+      const followings = request.result;
+      const followedEmails = followings.map(
+        (following: any) => following.followed
+      );
+      const posts: any[] = [];
+
+      for (const followedEmail of followedEmails) {
+        const userPosts = await getPostsByUser(db, followedEmail);
+        posts.push(...userPosts);
+      }
+
+      resolve(posts);
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB get followings error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB get followings error: ${(event.target as IDBRequest).error}`
+      );
+    };
+  });
+}
+
+function getPostsByUser(db: any, email: string): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.posts], 'readonly');
+    const store = transaction.objectStore(STORE_NAMES.posts);
+    const index = store.index('email');
+    const request = index.getAll(email);
+
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB get user posts error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB get user posts error: ${(event.target as IDBRequest).error}`
+      );
+    };
+  });
+}
+
 export async function populateDB(db: any): Promise<void> {
   const users = [];
   for (let i = 1; i <= 500; i++) {
@@ -537,24 +664,39 @@ export async function createUser(
   };
 
   await addUser(db, user);
+}
+
+export async function createRandomFollowingsAndFollowers(
+  db: any,
+  email: string
+): Promise<void> {
+  console.log('Starting createRandomFollowingsAndFollowers');
 
   const transaction = db.transaction([STORE_NAMES.users], 'readonly');
   const store = transaction.objectStore(STORE_NAMES.users);
   const request = store.get(email);
 
   request.onsuccess = async () => {
+    console.log('Request success');
     const newUser = request.result;
 
     if (newUser) {
+      console.log('New user found:', newUser);
+
       const followings = [];
       const followers = [];
       let followingId = 1;
 
       const followingCount = Math.floor(Math.random() * 6) + 15;
+      console.log('Following count:', followingCount);
+
       const followedUsers = new Set();
 
       while (followedUsers.size < followingCount) {
+        console.log('Generating following:', followedUsers.size);
         const randomUser = await getRandomUser(db, email);
+        console.log('Random user for following:', randomUser);
+
         if (
           randomUser &&
           randomUser.email !== email &&
@@ -570,10 +712,15 @@ export async function createUser(
       }
 
       const followerCount = Math.floor(Math.random() * 10) + 90;
+      console.log('Follower count:', followerCount);
+
       const followerUsers = new Set();
 
       while (followerUsers.size < followerCount) {
+        console.log('Generating follower:', followerUsers.size);
         const randomUser = await getRandomUser(db, email);
+        console.log('Random user for follower:', randomUser);
+
         if (
           randomUser &&
           randomUser.email !== email &&
@@ -588,7 +735,13 @@ export async function createUser(
         }
       }
 
+      console.log('Followings:', followings);
+      console.log('Followers:', followers);
+
       await addFollowings(db, [...followings, ...followers]);
+      console.log('Followings and followers added successfully');
+    } else {
+      console.log('No user found with email:', email);
     }
   };
 
@@ -598,6 +751,8 @@ export async function createUser(
       (event.target as IDBRequest).error
     );
   };
+
+  console.log('End of createRandomFollowingsAndFollowers');
 }
 
 async function getRandomUser(db: any, excludeEmail: string): Promise<any> {
