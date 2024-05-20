@@ -10,7 +10,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import classNames from 'classnames';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { HiCheck, HiOutlineExclamationCircle } from 'react-icons/hi2';
 import z from 'zod';

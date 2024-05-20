@@ -58,7 +58,7 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
   session,
 }) => {
   const router = useRouter();
-  const { setTheme, resolvedTheme, theme } = useTheme();
+  const { setTheme, theme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isThemeOpen, setIsThemeOpen] = useState(false);
   const { updateSessionInfo, signOut } = useSession();
@@ -129,8 +129,6 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
     e.stopPropagation();
     signOut();
   };
-
-  console.log('currentThemePreference', currentThemePreference);
 
   return (
     <div

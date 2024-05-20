@@ -96,7 +96,6 @@ const PostCard: React.FC<PostCardProps> = ({
     <div className="animate-fadeIn p-3 pb-0 rounded-md hover:bg-gray-light-50 dark:hover:bg-gray-dark-800 transition-colors mb-4">
       <div className="flex items-center mb-2">
         <div className="rounded-full h-8 w-8 border border-gray-light-400 dark:border-gray-dark-800 flex items-center justify-center relative">
-          <div className="bg-success-500 rounded-full h-[10px] w-[10px] absolute right-1 bottom-1 transform translate-y-1/2 translate-x-1/2" />
           <span className="body-small-semiBold text-gray-light-500 dark:text-gray-dark-400">
             {getInitials(user.userName)}
           </span>
@@ -115,6 +114,8 @@ const PostCard: React.FC<PostCardProps> = ({
           </span>
         </div>
       </div>
+
+      <p className="text-gray-light-900 dark:text-white mb-3">{post?.post}</p>
 
       {post.retweetFrom && (
         <div className="bg-gray-light-25 dark:bg-gray-dark-900 p-3 rounded-md mb-3">
@@ -144,7 +145,6 @@ const PostCard: React.FC<PostCardProps> = ({
         </div>
       )}
 
-      <p className="text-gray-light-900 dark:text-white mb-3">{post?.post}</p>
       <div className="flex space-x-4 text-gray-light-500 dark:text-gray-dark-400 text-sm mb-2">
         <span
           className={`flex items-center space-x-1 hover:text-green-600 transition-colors cursor-pointer ${
@@ -190,7 +190,7 @@ const PostCard: React.FC<PostCardProps> = ({
             />
             <button
               className={`px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors ${
-                commentText.trim() ? 'visible' : 'invisible'
+                commentText.trim() ? 'visible animate-fadeIn' : 'invisible'
               } focus:outline-none`}
               onClick={handleAddComment}
             >

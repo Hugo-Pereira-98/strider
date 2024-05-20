@@ -7,22 +7,30 @@ export const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(405).end();
   }
 
-  const { email, firstName, lastName } = req.body;
+  const { email, userName, userId } = req.body;
+  const emailLowerCase = email.toLowerCase();
 
   try {
     const fakeToken = jwt.sign(
-      { email, name: `${firstName} ${lastName}` },
+      {
+        email: emailLowerCase,
+        userName: userName,
+        dateJoined: new Date(),
+        userId,
+      },
       process.env.NEXT_PUBLIC_AUTH0_CLIENT_SECRET!,
       { expiresIn: '1h' }
     );
 
-    const refreshExpiresIn = 30 * 24 * 60 * 60; // 30 days
-    const accessExpiresIn = 60 * 60; // 1 hour
+    const refreshExpiresIn = 30 * 24 * 60 * 60;
+    const accessExpiresIn = 60 * 60;
 
     const userIdData = {
-      email,
-      name: `${firstName} ${lastName}`,
+      email: emailLowerCase,
+      userName: userName,
+      dateJoined: new Date(),
       sidebarCollapsed: true,
+      userId,
     };
     setCookie('posterr-id', JSON.stringify(userIdData), {
       req,

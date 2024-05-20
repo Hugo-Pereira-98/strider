@@ -47,10 +47,8 @@ export default function SignIn() {
 
   const handleSignIn = async (values: SignInForm) => {
     try {
-      // Open IndexedDB and get users
       const db = await openDB();
       const users = await getUsers(db);
-      console.log('users:', users);
 
       const user = users.find((user) => user.email === values.email);
 
@@ -69,7 +67,6 @@ export default function SignIn() {
         return;
       }
 
-      // If user is found and password is valid, send user data to API to create cookies
       const response = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: {
@@ -77,8 +74,8 @@ export default function SignIn() {
         },
         body: JSON.stringify({
           email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
+          userName: user.userName,
+          userId: user.userId,
         }),
       });
 
