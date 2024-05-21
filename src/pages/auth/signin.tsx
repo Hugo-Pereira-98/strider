@@ -114,7 +114,7 @@ export default function SignIn() {
           Sign in to Posterr
         </h1>
         <h2 className="body-medium-regular text-gray-light-600 dark:text-gray-dark-400">
-          Access your private market concierge
+          Access your network
         </h2>
       </header>
 
