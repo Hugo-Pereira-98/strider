@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { FaRetweet, FaHeart, FaComment } from 'react-icons/fa';
 import Badge from './ui/Badge';
@@ -6,7 +6,8 @@ import { Post, User, Comment } from '@/utils/interfaces';
 import {
   addComment,
   toggleLike,
-  toggleRetweet,
+  followUser,
+  getUserById,
   openDB,
 } from '@/utils/indexedDB';
 import { PostModal } from './Modal/NewPostModal';
@@ -31,6 +32,20 @@ const PostCard: React.FC<PostCardProps> = ({
   const [likes, setLikes] = useState<number[]>(post.likes);
   const [retweets, setRetweets] = useState<number[]>(post.retweets);
   const [isPostModalOpen, setIsPostModalOpen] = useState<boolean>(false);
+  const [isFollowing, setIsFollowing] = useState<boolean>(false);
+
+  useEffect(() => {
+    const checkFollowingStatus = async () => {
+      const db = await openDB();
+      const sessionUser = await getUserById(db, sessionUserId);
+      const following = sessionUser.following.some(
+        (followingUser) => followingUser.userId === user.userId
+      );
+      setIsFollowing(following);
+    };
+
+    checkFollowingStatus();
+  }, [sessionUserId, user.userId]);
 
   const getInitials = (name: string) => {
     return name
@@ -91,26 +106,42 @@ const PostCard: React.FC<PostCardProps> = ({
     setIsPostModalOpen(true);
   };
 
+  const handleFollowToggle = async () => {
+    const db = await openDB();
+    await followUser(db, sessionUserId, user.userId);
+    setIsFollowing((prev) => !prev);
+  };
+
   return (
     <div className="animate-fadeIn p-3 pb-0 rounded-md hover:bg-gray-light-50 dark:hover:bg-gray-dark-800 transition-colors mb-4">
-      <div className="flex items-center mb-2">
-        <div className="rounded-full h-8 w-8 border border-gray-light-400 dark:border-gray-dark-800 flex items-center justify-center relative">
-          <span className="body-small-semiBold text-gray-light-500 dark:text-gray-dark-400">
-            {getInitials(user.userName)}
-          </span>
-        </div>
-        <div className="ml-3">
-          <div className="flex items-center space-x-2">
-            <span className="font-bold text-gray-light-900 dark:text-white">
-              {user.userName}
-            </span>
-            <span className="text-gray-light-500 dark:text-gray-dark-400">
-              @{user.email.split('@')[0]}
+      <div className="flex items-center mb-2 justify-between">
+        <div className="flex items-center">
+          <div className="rounded-full h-8 w-8 border border-gray-light-400 dark:border-gray-dark-800 flex items-center justify-center relative">
+            <span className="body-small-semiBold text-gray-light-500 dark:text-gray-dark-400">
+              {getInitials(user.userName)}
             </span>
           </div>
-          <span className="text-gray-light-400 dark:text-gray-dark-500 text-sm">
-            {format(new Date(post?.postDate), 'MMMM dd, yyyy')}
-          </span>
+          <div className="ml-3">
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-gray-light-900 dark:text-white">
+                {user.userName}
+              </span>
+              <span className="text-gray-light-500 dark:text-gray-dark-400">
+                @{user.email.split('@')[0]}
+              </span>
+            </div>
+            <span className="text-gray-light-400 dark:text-gray-dark-500 text-sm">
+              {format(new Date(post?.postDate), 'MMMM dd, yyyy')}
+            </span>
+          </div>
+        </div>
+        <div onClick={handleFollowToggle} className="cursor-pointer">
+          {sessionUserId !== user.userId && (
+            <Badge
+              color={isFollowing ? 'secondary' : 'primary'}
+              label={isFollowing ? 'Unfollow' : 'Follow'}
+            />
+          )}
         </div>
       </div>
 

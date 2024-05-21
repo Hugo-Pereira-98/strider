@@ -1,14 +1,13 @@
 import { useToast } from '@/hooks/useToast';
+import { createPost, openDB } from '@/utils/indexedDB';
+import { RetweetFrom, User } from '@/utils/interfaces';
+import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import Button from '../Button';
 import { Close } from '../Icons/Close';
-import { Form } from '../ui/Form';
 import Textarea from '../Textarea';
-import { format } from 'date-fns';
-import { Post, User, RetweetFrom } from '@/utils/interfaces';
-import { createPost, openDB } from '@/utils/indexedDB';
-import PostCard from '../PostCard';
+import { Form } from '../ui/Form';
 
 interface PostModalProps {
   open: boolean;
@@ -28,6 +27,7 @@ export function PostModal({
     Pick<User, 'userId' | 'userName' | 'email'>[]
   >([]);
   const [isTagging, setIsTagging] = useState(false);
+  const [content, setContent] = useState('');
   const methods = useForm({
     defaultValues: {
       content: '',
@@ -55,10 +55,11 @@ export function PostModal({
 
     const db = await openDB();
     try {
+      const postContent = retweetFrom && !data.content ? '' : data.content;
       const newPost = await createPost(
         db,
         userId,
-        data.content,
+        postContent,
         taggedUsers,
         retweetFrom || null
       );
@@ -94,6 +95,16 @@ export function PostModal({
     };
   }, [open]);
 
+  const canSubmit = !isTagging && (retweetFrom || content.length > 0);
+  const charsRemaining = 777 - content.length;
+
+  const handleContentChange = (newContent: string) => {
+    if (newContent.length <= 777) {
+      setValue('content', newContent);
+      setContent(newContent);
+    }
+  };
+
   return (
     <div
       className={`flex justify-center items-center fixed inset-0 z-[500] px-4 ${
@@ -114,34 +125,6 @@ export function PostModal({
           </p>
         </div>
 
-        {retweetFrom && (
-          <div className="bg-gray-light-100 dark:bg-gray-dark-900 p-3 rounded-md mb-3">
-            <div className="flex items-center mb-2">
-              <div className="rounded-full h-8 w-8 border border-gray-light-400 dark:border-gray-dark-800 flex items-center justify-center relative">
-                <span className="body-small-semiBold text-gray-light-500 dark:text-gray-dark-400">
-                  {retweetFrom.userName.charAt(0)}
-                </span>
-              </div>
-              <div className="ml-3">
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-gray-light-900 dark:text-white">
-                    {retweetFrom.userName}
-                  </span>
-                  <span className="text-gray-light-500 dark:text-gray-dark-400">
-                    @{retweetFrom.email.split('@')[0]}
-                  </span>
-                </div>
-                <span className="text-gray-light-400 dark:text-gray-dark-500 text-sm">
-                  {format(new Date(retweetFrom.postDate), 'MMMM dd, yyyy')}
-                </span>
-              </div>
-            </div>
-            <p className="text-gray-light-900 dark:text-white mb-3">
-              {retweetFrom.post}
-            </p>
-          </div>
-        )}
-
         <FormProvider {...methods}>
           <Form onSubmit={handleSubmit(handleCreatePost)} className="mt-8">
             <div className="my-6">
@@ -150,15 +133,19 @@ export function PostModal({
                   height: '140px',
                   resize: `none`,
                 }}
+                maxLength={777}
                 labelText="Post Content"
                 placeholder="What's on your mind?"
                 feedbackType={errors.content?.message ? 'error' : 'none'}
                 feedback={errors.content?.message}
-                {...register('content', { required: 'Content is required' })}
+                {...register('content')}
                 onTaggedUsersChange={setTaggedUsers}
-                onContentChange={(content) => setValue('content', content)}
+                onContentChange={handleContentChange}
                 setIsTagging={setIsTagging}
               />
+              <div className="text-right text-sm text-gray-light-600 dark:text-gray-dark-400">
+                {charsRemaining} characters remaining
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -172,13 +159,41 @@ export function PostModal({
               ))}
             </div>
 
+            {retweetFrom && (
+              <div className="bg-gray-light-100 dark:bg-gray-dark-900 p-3 rounded-md mb-3">
+                <div className="flex items-center mb-2">
+                  <div className="rounded-full h-8 w-8 border border-gray-light-400 dark:border-gray-dark-800 flex items-center justify-center relative">
+                    <span className="body-small-semiBold text-gray-light-500 dark:text-gray-dark-400">
+                      {retweetFrom.userName.charAt(0)}
+                    </span>
+                  </div>
+                  <div className="ml-3">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold text-gray-light-900 dark:text-white">
+                        {retweetFrom.userName}
+                      </span>
+                      <span className="text-gray-light-500 dark:text-gray-dark-400">
+                        @{retweetFrom.email.split('@')[0]}
+                      </span>
+                    </div>
+                    <span className="text-gray-light-400 dark:text-gray-dark-500 text-sm">
+                      {format(new Date(retweetFrom.postDate), 'MMMM dd, yyyy')}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-gray-light-900 dark:text-white mb-3">
+                  {retweetFrom.post}
+                </p>
+              </div>
+            )}
+
             <div className="flex items-center gap-3 mt-5">
               <Button
                 label="Cancel"
                 buttonType="secondaryGray"
                 onClick={onClose}
               />
-              <Button type="submit" label="Submit" />
+              <Button type="submit" label="Submit" disabled={!canSubmit} />
             </div>
           </Form>
         </FormProvider>

@@ -35,11 +35,27 @@ export default function Feed() {
   const [offset, setOffset] = useState(0);
   const limit = 20;
   const loaderRef = useRef<HTMLDivElement>(null);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const toggleModal = () => setIsModalOpen(!isModalOpen);
+
+  const fetchData = async () => {
+    const db = await openDB();
+    if (feedType === 'all') {
+      const newPosts = await getAllPosts(db, offset, limit, searchTerm);
+      setAllPosts((prevPosts) => [...prevPosts, ...newPosts]);
+    } else if (feedType === 'following' && session) {
+      const newPosts = await getPostsFromFollowedUsers(
+        db,
+        session.email,
+        offset,
+        limit,
+        searchTerm
+      );
+      setFollowingPosts((prevPosts) => [...prevPosts, ...newPosts]);
+    }
+  };
 
   useEffect(() => {
     const { feed } = router.query;
@@ -51,24 +67,6 @@ export default function Feed() {
   }, [router.query]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const db = await openDB();
-
-      if (feedType === 'all') {
-        const newPosts = await getAllPosts(db, offset, limit, searchTerm);
-        setAllPosts((prevPosts) => [...prevPosts, ...newPosts]);
-      } else if (feedType === 'following' && session) {
-        const newPosts = await getPostsFromFollowedUsers(
-          db,
-          session.email,
-          offset,
-          limit,
-          searchTerm
-        );
-        setFollowingPosts((prevPosts) => [...prevPosts, ...newPosts]);
-      }
-    };
-
     fetchData();
   }, [feedType, session, offset, searchTerm]);
 
@@ -115,6 +113,15 @@ export default function Feed() {
       setFollowingPosts([]);
     }
   };
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      setOffset(0);
+      setAllPosts([]);
+      setFollowingPosts([]);
+      fetchData();
+    }
+  }, [isModalOpen]);
 
   return (
     <UserLayout sessions={sessions}>
@@ -176,7 +183,11 @@ export default function Feed() {
       </div>
 
       {isModalOpen && (
-        <PostModal open={isModalOpen} userId={21} onClose={toggleModal} />
+        <PostModal
+          open={isModalOpen}
+          userId={session.userId}
+          onClose={toggleModal}
+        />
       )}
     </UserLayout>
   );

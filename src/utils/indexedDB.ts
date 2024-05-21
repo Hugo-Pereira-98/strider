@@ -52,7 +52,6 @@ export async function createPost(
       newPost.id = request.result as number;
 
       if (retweetFrom) {
-        // Increment the retweets array of the referenced post
         const getRequest = store.get(retweetFrom.postId);
 
         getRequest.onsuccess = () => {
@@ -105,6 +104,106 @@ export async function createPost(
       reject(
         `IndexedDB create post error: ${(event.target as IDBRequest).error}`
       );
+    };
+  });
+}
+
+export async function followUser(
+  db: IDBDatabase | typeof inMemoryDB,
+  userId: number,
+  targetUserId: number
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.users], 'readwrite');
+    const store = transaction.objectStore(STORE_NAMES.users);
+
+    const userRequest = store.get(userId);
+    const targetUserRequest = store.get(targetUserId);
+
+    userRequest.onsuccess = () => {
+      const user = userRequest.result as User;
+      targetUserRequest.onsuccess = () => {
+        const targetUser = targetUserRequest.result as User;
+
+        if (!user || !targetUser) {
+          reject('User not found');
+          return;
+        }
+
+        const isFollowing = user.following.some(
+          (u) => u.userId === targetUserId
+        );
+
+        if (isFollowing) {
+          user.following = user.following.filter(
+            (u) => u.userId !== targetUserId
+          );
+          targetUser.followers = targetUser.followers.filter(
+            (u) => u.userId !== userId
+          );
+        } else {
+          user.following.push({
+            userId: targetUser.userId,
+            userName: targetUser.userName,
+            email: targetUser.email,
+          });
+          targetUser.followers.push({
+            userId: user.userId,
+            userName: user.userName,
+            email: user.email,
+          });
+        }
+
+        const userUpdateRequest = store.put(user);
+        const targetUserUpdateRequest = store.put(targetUser);
+
+        userUpdateRequest.onsuccess = () => {
+          targetUserUpdateRequest.onsuccess = () => {
+            resolve();
+          };
+          targetUserUpdateRequest.onerror = (event: any) => {
+            console.error(
+              'IndexedDB update target user error:',
+              (event.target as IDBRequest).error
+            );
+            reject(
+              `IndexedDB update target user error: ${
+                (event.target as IDBRequest).error
+              }`
+            );
+          };
+        };
+
+        userUpdateRequest.onerror = (event: any) => {
+          console.error(
+            'IndexedDB update user error:',
+            (event.target as IDBRequest).error
+          );
+          reject(
+            `IndexedDB update user error: ${(event.target as IDBRequest).error}`
+          );
+        };
+      };
+
+      targetUserRequest.onerror = (event: any) => {
+        console.error(
+          'IndexedDB get target user error:',
+          (event.target as IDBRequest).error
+        );
+        reject(
+          `IndexedDB get target user error: ${
+            (event.target as IDBRequest).error
+          }`
+        );
+      };
+    };
+
+    userRequest.onerror = (event: any) => {
+      console.error(
+        'IndexedDB get user error:',
+        (event.target as IDBRequest).error
+      );
+      reject(`IndexedDB get user error: ${(event.target as IDBRequest).error}`);
     };
   });
 }
@@ -170,7 +269,7 @@ export async function getAllPosts(
   return postUserPairs;
 }
 
-function getUserById(
+export function getUserById(
   db: IDBDatabase | typeof inMemoryDB,
   userId: number
 ): Promise<User> {
