@@ -147,26 +147,6 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
             } max-w-[208px] w-[208px] min-w-[208px] rounded-md shadow-lg border border-gray-light-300 dark:border-gray-dark-700 bg-white dark:bg-gray-dark-950 z-50`}
             onClick={() => router.push('/settings/security')}
           >
-            <div className="w-full text-left px-4 py-3 body-small-medium text-gray-light-700 dark:text-gray-dark-300 hover:bg-gray-light-50 rounded-t-md dark:hover:bg-gray-dark-800 flex items-center gap-1 cursor-pointer">
-              <Individual
-                className="stroke-gray-light-600 dark:stroke-gray-dark-400"
-                width="24"
-                height="24"
-              />
-              <span>Account Settings</span>
-            </div>
-
-            <div
-              className="w-full text-left px-4 py-3 body-small-medium text-gray-light-700 dark:text-gray-dark-300 hover:bg-gray-light-50 dark:hover:bg-gray-dark-800 flex items-center gap-2 cursor-pointer"
-              onClick={() => router.push('/settings/team')}
-            >
-              <SettingsWorkspace
-                className="stroke-gray-light-600 dark:stroke-gray-dark-400"
-                width="24"
-                height="24"
-              />
-              <span>Workspace Settings</span>
-            </div>
             <div
               className="w-full text-left px-4 py-3 body-small-medium text-gray-light-700 dark:text-gray-dark-300 hover:bg-gray-light-50 dark:hover:bg-gray-dark-800 border-t border-b dark:border-gray-dark-800 flex items-center justify-between cursor-pointer"
               onClick={(e) => {
