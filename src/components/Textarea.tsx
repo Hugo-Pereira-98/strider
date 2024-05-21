@@ -29,7 +29,11 @@ export interface TextareaProps
   placeholder?: string;
   helpText?: string;
   heightPx?: string;
-  onTaggedUsersChange?: (taggedUsers: User[]) => void;
+  onTaggedUsersChange?: (
+    taggedUsers: Pick<User, 'userId' | 'userName' | 'email'>[]
+  ) => void;
+  onContentChange?: (content: string) => void;
+  setIsTagging?: (isTagging: boolean) => void;
 }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
@@ -45,6 +49,8 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       helpText,
       heightPx,
       onTaggedUsersChange,
+      onContentChange,
+      setIsTagging,
       ...props
     },
     ref
@@ -89,6 +95,16 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       return users;
     };
 
+    const removeUnmatchedTaggedUsers = (content: string) => {
+      const updatedTaggedUsers = taggedUsers.filter((user) =>
+        content.includes(`@${user.userName}`)
+      );
+      setTaggedUsers(updatedTaggedUsers);
+      if (onTaggedUsersChange) {
+        onTaggedUsersChange(updatedTaggedUsers);
+      }
+    };
+
     const handleOnChange = async (
       e: React.ChangeEvent<HTMLTextAreaElement>
     ) => {
@@ -100,6 +116,11 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       if (props.onChange) {
         props.onChange(e);
       }
+      if (onContentChange) {
+        onContentChange(value);
+      }
+
+      removeUnmatchedTaggedUsers(value);
 
       const cursorPosition = e.target.selectionStart!;
       const textBeforeCursor = value.slice(0, cursorPosition);
@@ -120,10 +141,13 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           tag.length > 0 ? await fetchUsers(tag) : await fetchUsers('');
         setFilteredUsers(suggestions);
         setShowSuggestions(true);
+        setCursor(-1);
         const { top, left } = getCursorCoordinates(textBeforeCursor);
         setDropdownPosition({ top, left });
+        if (setIsTagging) setIsTagging(true);
       } else {
         setShowSuggestions(false);
+        if (setIsTagging) setIsTagging(false);
       }
     };
 
@@ -210,8 +234,12 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       if (onTaggedUsersChange) {
         onTaggedUsersChange(newTaggedUsers);
       }
+      if (onContentChange) {
+        onContentChange(newValue);
+      }
 
       setShowSuggestions(false);
+      if (setIsTagging) setIsTagging(false);
       setCursor(-1);
 
       const newCursorPosition = lastAtSymbol + 1 + user.userName.length + 1;
@@ -219,7 +247,9 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       textarea.focus();
     };
 
-    const handleClickOnUser = (user: User) => {
+    const handleClickOnUser = (
+      user: Pick<User, 'userId' | 'userName' | 'email'>
+    ) => {
       console.log(user);
     };
 
@@ -342,17 +372,6 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
                 ))}
               </ul>
             )}
-          </div>
-          <div className="mt-2">
-            {taggedUsers.map((user) => (
-              <span
-                key={user.userId}
-                className="text-blue-500 cursor-pointer"
-                onClick={() => handleClickOnUser(user)}
-              >
-                @{user.userName}{' '}
-              </span>
-            ))}
           </div>
         </div>
 

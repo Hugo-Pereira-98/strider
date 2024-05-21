@@ -48,9 +48,53 @@ export async function createPost(
     const store = transaction.objectStore(STORE_NAMES.posts);
     const request = store.add(newPost);
 
-    request.onsuccess = () => {
+    request.onsuccess = async () => {
       newPost.id = request.result as number;
-      resolve(newPost);
+
+      if (retweetFrom) {
+        // Increment the retweets array of the referenced post
+        const getRequest = store.get(retweetFrom.postId);
+
+        getRequest.onsuccess = () => {
+          const referencedPost = getRequest.result as Post;
+          if (referencedPost) {
+            referencedPost.retweets.push(newPost.id!);
+            const updateRequest = store.put(referencedPost);
+
+            updateRequest.onsuccess = () => {
+              resolve(newPost);
+            };
+
+            updateRequest.onerror = (event: any) => {
+              console.error(
+                'IndexedDB update retweets error:',
+                (event.target as IDBRequest).error
+              );
+              reject(
+                `IndexedDB update retweets error: ${
+                  (event.target as IDBRequest).error
+                }`
+              );
+            };
+          } else {
+            resolve(newPost);
+          }
+        };
+
+        getRequest.onerror = (event: any) => {
+          console.error(
+            'IndexedDB get referenced post error:',
+            (event.target as IDBRequest).error
+          );
+          reject(
+            `IndexedDB get referenced post error: ${
+              (event.target as IDBRequest).error
+            }`
+          );
+        };
+      } else {
+        resolve(newPost);
+      }
     };
 
     request.onerror = (event: any) => {

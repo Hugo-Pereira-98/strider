@@ -4,27 +4,30 @@ import { FormProvider, useForm } from 'react-hook-form';
 import Button from '../Button';
 import { Close } from '../Icons/Close';
 import { Form } from '../ui/Form';
-import InputField from '../ui/Input';
 import Textarea from '../Textarea';
-import {
-  Post,
-  User,
-  Comment,
-  ThemePreference,
-  RetweetFrom,
-} from '@/utils/interfaces';
-
-import { createPost } from '@/utils/indexedDB';
+import { format } from 'date-fns';
+import { Post, User, RetweetFrom } from '@/utils/interfaces';
+import { createPost, openDB } from '@/utils/indexedDB';
+import PostCard from '../PostCard';
 
 interface PostModalProps {
   open: boolean;
   onClose(): void;
   userId: number;
+  retweetFrom?: RetweetFrom;
 }
 
-export function PostModal({ open, onClose, userId }: PostModalProps) {
+export function PostModal({
+  open,
+  onClose,
+  userId,
+  retweetFrom,
+}: PostModalProps) {
   const { toast } = useToast();
-  const [taggedUsers, setTaggedUsers] = useState<string[]>([]);
+  const [taggedUsers, setTaggedUsers] = useState<
+    Pick<User, 'userId' | 'userName' | 'email'>[]
+  >([]);
+  const [isTagging, setIsTagging] = useState(false);
   const methods = useForm({
     defaultValues: {
       content: '',
@@ -44,15 +47,31 @@ export function PostModal({ open, onClose, userId }: PostModalProps) {
     }
   };
 
-  const handleCreatePost = (data: { content: string }) => {
-    console.log(
-      `User ID: ${userId}, Content: ${data.content}, Tagged: ${taggedUsers}`
-    );
-    toast({
-      title: 'Post Created',
-      description: 'Your post has been created successfully.',
-    });
-    onClose();
+  const handleCreatePost = async (data: { content: string }) => {
+    if (isTagging) {
+      // Prevent form submission if a user is being tagged
+      return;
+    }
+
+    const db = await openDB();
+    try {
+      const newPost = await createPost(
+        db,
+        userId,
+        data.content,
+        taggedUsers,
+        retweetFrom || null
+      );
+      console.log('New Post:', newPost);
+
+      toast({
+        title: 'Post Created',
+        description: 'Your post has been created successfully.',
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error creating post:', error);
+    }
   };
 
   useEffect(() => {
@@ -86,7 +105,7 @@ export function PostModal({ open, onClose, userId }: PostModalProps) {
           <Close />
         </button>
 
-        <div className="relative pb-5">
+        <div className="relative">
           <p className="body-large-semibold text-gray-light-950 dark:text-gray-dark-50">
             Create a Post
           </p>
@@ -95,9 +114,37 @@ export function PostModal({ open, onClose, userId }: PostModalProps) {
           </p>
         </div>
 
+        {retweetFrom && (
+          <div className="bg-gray-light-100 dark:bg-gray-dark-900 p-3 rounded-md mb-3">
+            <div className="flex items-center mb-2">
+              <div className="rounded-full h-8 w-8 border border-gray-light-400 dark:border-gray-dark-800 flex items-center justify-center relative">
+                <span className="body-small-semiBold text-gray-light-500 dark:text-gray-dark-400">
+                  {retweetFrom.userName.charAt(0)}
+                </span>
+              </div>
+              <div className="ml-3">
+                <div className="flex items-center space-x-2">
+                  <span className="font-bold text-gray-light-900 dark:text-white">
+                    {retweetFrom.userName}
+                  </span>
+                  <span className="text-gray-light-500 dark:text-gray-dark-400">
+                    @{retweetFrom.email.split('@')[0]}
+                  </span>
+                </div>
+                <span className="text-gray-light-400 dark:text-gray-dark-500 text-sm">
+                  {format(new Date(retweetFrom.postDate), 'MMMM dd, yyyy')}
+                </span>
+              </div>
+            </div>
+            <p className="text-gray-light-900 dark:text-white mb-3">
+              {retweetFrom.post}
+            </p>
+          </div>
+        )}
+
         <FormProvider {...methods}>
           <Form onSubmit={handleSubmit(handleCreatePost)} className="mt-8">
-            <div className="space-y-4 my-10">
+            <div className="my-6">
               <Textarea
                 style={{
                   height: '140px',
@@ -108,6 +155,9 @@ export function PostModal({ open, onClose, userId }: PostModalProps) {
                 feedbackType={errors.content?.message ? 'error' : 'none'}
                 feedback={errors.content?.message}
                 {...register('content', { required: 'Content is required' })}
+                onTaggedUsersChange={setTaggedUsers}
+                onContentChange={(content) => setValue('content', content)}
+                setIsTagging={setIsTagging}
               />
             </div>
 
@@ -117,12 +167,12 @@ export function PostModal({ open, onClose, userId }: PostModalProps) {
                   key={index}
                   className="px-2 py-1 bg-gray-light-200 dark:bg-gray-dark-700 rounded-md"
                 >
-                  {user}
+                  {user.userName}
                 </span>
               ))}
             </div>
 
-            <div className="flex items-center gap-3 mt-8">
+            <div className="flex items-center gap-3 mt-5">
               <Button
                 label="Cancel"
                 buttonType="secondaryGray"

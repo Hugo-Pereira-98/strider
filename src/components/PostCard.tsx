@@ -9,6 +9,7 @@ import {
   toggleRetweet,
   openDB,
 } from '@/utils/indexedDB';
+import { PostModal } from './Modal/NewPostModal';
 
 interface PostCardProps {
   post: Post;
@@ -29,6 +30,7 @@ const PostCard: React.FC<PostCardProps> = ({
   const [showComments, setShowComments] = useState<boolean>(false);
   const [likes, setLikes] = useState<number[]>(post.likes);
   const [retweets, setRetweets] = useState<number[]>(post.retweets);
+  const [isPostModalOpen, setIsPostModalOpen] = useState<boolean>(false);
 
   const getInitials = (name: string) => {
     return name
@@ -86,16 +88,7 @@ const PostCard: React.FC<PostCardProps> = ({
   };
 
   const handleToggleRetweet = async () => {
-    const db = await openDB();
-    await toggleRetweet(db, post.id!, sessionUserId);
-    const retweetIndex = retweets.indexOf(sessionUserId);
-    if (retweetIndex > -1) {
-      setRetweets((prevRetweets) =>
-        prevRetweets.filter((id) => id !== sessionUserId)
-      );
-    } else {
-      setRetweets((prevRetweets) => [...prevRetweets, sessionUserId]);
-    }
+    setIsPostModalOpen(true);
   };
 
   return (
@@ -229,6 +222,23 @@ const PostCard: React.FC<PostCardProps> = ({
         </div>
       </div>
       <div className="border-b border-gray-light-200 dark:border-gray-dark-800 pb-3 h-2 w-full" />
+
+      {isPostModalOpen && (
+        <PostModal
+          open={isPostModalOpen}
+          onClose={() => setIsPostModalOpen(false)}
+          userId={sessionUserId}
+          retweetFrom={{
+            postId: post.id!,
+            postDate: post.postDate,
+            tagged: post.tagged,
+            post: post.post,
+            userId: post.userId,
+            userName: user.userName,
+            email: user.email,
+          }}
+        />
+      )}
     </div>
   );
 };
