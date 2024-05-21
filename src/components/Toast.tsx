@@ -32,7 +32,7 @@ export function Toast({
 
   return (
     <div
-      className={`p-4 pl-2 bg-white dark:bg-gray-dark-900 w-[400px] rounded-xl fixed top-4 right-4 z-[99999] shadow-large border border-gray-light-300 dark:border-gray-dark-700 flex gap-2 ${animationClass}`}
+      className={`p-4 pl-2 bg-white dark:bg-gray-dark-900 w-[300px] md:w-[400px] rounded-xl fixed top-4 right-4 z-[99999] shadow-large border border-gray-light-300 dark:border-gray-dark-700 flex gap-2 ${animationClass}`}
     >
       <button className="absolute right-4 top-4" onClick={onClose}>
         <Close />

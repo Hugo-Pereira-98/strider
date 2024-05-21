@@ -155,7 +155,7 @@ export default function Feed() {
   return (
     <UserLayout sessions={sessions}>
       <div className="p-4">
-        <div className="sticky top-0 z-10 bg-white dark:bg-gray-dark-950 flex justify-between items-center py-4">
+        <div className="sticky top-0 z-10 bg-white dark:bg-gray-dark-950 flex flex-col md:flex-row justify-between items-center py-4">
           <div className="flex space-x-4">
             <button
               className={`px-4 py-2 focus:outline-none ${
@@ -189,16 +189,16 @@ export default function Feed() {
             </button>
           </div>
           {feedType !== 'discover' && (
-            <div className="flex space-x-4">
+            <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mt-4 md:mt-0 w-full md:w-auto">
               <input
                 type="text"
                 placeholder="Search posts"
                 value={searchTerm}
                 onChange={handleSearch}
-                className="p-2 border focus:outline-gray-light-25 focus:dark:outline-gray-dark-900 border-gray-light-300 dark:border-gray-dark-700 bg-gray-light-25 dark:bg-gray-dark-800 rounded-md"
+                className="p-2 border w-full md:w-auto focus:outline-gray-light-25 focus:dark:outline-gray-dark-900 border-gray-light-300 dark:border-gray-dark-700 bg-gray-light-25 dark:bg-gray-dark-800 rounded-md"
               />
               <button
-                className="px-4 py-2 focus:outline-primary-500 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+                className="px-4 py-2 focus:outline-primary-500 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors w-full md:w-auto"
                 onClick={toggleModal}
               >
                 Post
