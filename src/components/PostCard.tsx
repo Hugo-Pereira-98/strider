@@ -10,7 +10,7 @@ import {
   getUserById,
   openDB,
 } from '@/utils/indexedDB';
-import { PostModal } from './Modal/NewPostModal';
+import { PostModal } from './Modal/PostModal';
 
 interface PostCardProps {
   post: Post;

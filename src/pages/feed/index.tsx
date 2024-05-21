@@ -10,7 +10,7 @@ import {
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Post, User } from '@/utils/interfaces';
 import PostCard from '@/components/PostCard';
-import { PostModal } from '@/components/Modal/NewPostModal';
+import { PostModal } from '@/components/Modal/PostModal';
 import { HomeLine } from '@/components/Icons/HomeLine';
 import { UserProfileModal } from '@/components/Modal/UserProfileModal';
 import UserCard from '@/components/UserCard';

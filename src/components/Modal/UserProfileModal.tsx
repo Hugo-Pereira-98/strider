@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Button from '../Button';
-import { PostModal } from '@/components/Modal/NewPostModal';
+import { PostModal } from '@/components/Modal/PostModal';
 
 interface UserProfileModalProps {
   open: boolean;

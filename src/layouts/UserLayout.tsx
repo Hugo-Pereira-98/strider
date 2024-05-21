@@ -1,5 +1,4 @@
 import { AlignLeft } from '@/components/Icons/AlignLeft';
-import { PosterrLogo } from '@/components/Icons/PosterrLogo';
 import { Sidebar } from '@/components/Sidebar';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import { SelectDown } from '@/components/ui/SelectDown';
@@ -8,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { ReactNode } from 'react';
 import { useSidebar } from '../contexts/SidebarContext';
+import { FaTwitter } from 'react-icons/fa';
 
 interface UserLayoutProps {
   menuItems?: {
@@ -41,10 +41,15 @@ export function UserLayout({
 
       <div className="relative flex flex-1 flex-col 2xl:items-center">
         <div className="2xl:hidden border-b border-gray-light-200 dark:border-gray-dark-800 pb-4 flex items-center justify-between p-6 sm:p-8">
-          <Link href="/indications">
-            <PosterrLogo className="fill-gray-light-900 dark:fill-gray-dark-300" />
-          </Link>
-
+          <div className="flex items-center">
+            <FaTwitter
+              size={32}
+              className="fill-primary-500 dark:fill-primary-600"
+            />
+            <span className="ml-2 text-gray-light-900 dark:text-white body-extra-large-medium">
+              Posterr
+            </span>
+          </div>
           <button type="button" onClick={() => setSidebarOpen(true)}>
             <AlignLeft className="stroke-gray-light-700 dark:stroke-gray-dark-300" />
           </button>

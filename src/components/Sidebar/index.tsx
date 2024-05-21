@@ -6,13 +6,12 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight } from '../Icons/ChevronRight';
 import { Signal } from '../Icons/Signal';
-import { SearchBarModal } from '../Modal/SearchBarModal';
 import SettingsCard from '../SettingsCard';
 import { SidebarLink } from './SidebarLink';
 
 export function Sidebar() {
   const sidebar = useRef<any>(null);
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
+
   const [isButtonVisible, setIsButtonVisible] = useState(false);
   const buttonVisibilityTimeout = useRef<number | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
@@ -75,23 +74,6 @@ export function Sidebar() {
     };
   }, [isMobileView, setIsCollapsed, isCollapsed]);
 
-  useEffect(() => {
-    const handleKeyPress = (e: any) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setSearchModalOpen(true);
-      } else if (e.key === 'Escape') {
-        setSearchModalOpen(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [setSearchModalOpen]);
-
   const toggleSidebar = () => {
     const newCollapsedState = !isCollapsed;
     setIsCollapsed(newCollapsedState);
@@ -116,7 +98,7 @@ export function Sidebar() {
             isCollapsed ? 'justify-start' : 'justify-center'
           } border-gray-light-200 dark:border-gray-dark-800 px-2 py-3 w-full h-[66px]`}
         >
-          <Link href="/indications">
+          <Link href="/feed">
             {isCollapsed ? (
               <div className="flex items-center">
                 <FaTwitter
@@ -182,13 +164,6 @@ export function Sidebar() {
           </div>
         )}
       </aside>
-
-      {searchModalOpen && (
-        <SearchBarModal
-          open={searchModalOpen}
-          onClose={() => setSearchModalOpen(false)}
-        />
-      )}
     </>
   );
 }
