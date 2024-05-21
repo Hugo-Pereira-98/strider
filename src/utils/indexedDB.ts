@@ -200,7 +200,7 @@ export async function populateDB(
       new Date(2023, 0, 1)
     );
     const themePreference = 'light';
-    const userName = `${firstName} ${lastName}`;
+    const userName = `${firstName}-${lastName}`;
 
     const user: User = {
       userId,

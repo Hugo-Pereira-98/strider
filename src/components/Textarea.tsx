@@ -29,9 +29,8 @@ export interface TextareaProps
   placeholder?: string;
   helpText?: string;
   heightPx?: string;
+  onTaggedUsersChange?: (taggedUsers: User[]) => void;
 }
-
-const mockUsers = ['john_doe', 'jane_smith', 'alex_jones'];
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   (
@@ -45,6 +44,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       disabled,
       helpText,
       heightPx,
+      onTaggedUsersChange,
       ...props
     },
     ref
@@ -53,9 +53,8 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const [isHovered, setIsHovered] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
-    const [filteredUsers, setFilteredUsers] = useState<string[]>([]);
-    const [currentTag, setCurrentTag] = useState<string>('');
-    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+    const [taggedUsers, setTaggedUsers] = useState<User[]>([]);
     const [cursor, setCursor] = useState<number>(-1);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const hiddenDivRef = useRef<HTMLDivElement>(null);
@@ -84,7 +83,15 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 
     const handleBlur = () => setIsFocused(false);
 
-    const handleOnChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const fetchUsers = async (filter: string) => {
+      const db = await openDB();
+      const users = await getUsersFiltered(db, filter);
+      return users;
+    };
+
+    const handleOnChange = async (
+      e: React.ChangeEvent<HTMLTextAreaElement>
+    ) => {
       if (finalState === 'disabled' || finalState === 'viewOnly') return;
 
       const value = e.target.value;
@@ -98,51 +105,69 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       const textBeforeCursor = value.slice(0, cursorPosition);
       const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
 
-      if (lastAtSymbol !== -1) {
+      const showSuggestionsCondition = () => {
+        const atSymbolIndex = textBeforeCursor.lastIndexOf('@');
+        if (atSymbolIndex === -1) return false;
+        const textAfterAtSymbol = textBeforeCursor.slice(atSymbolIndex + 1);
+        const alphanumeric = /^[a-zA-Z0-9]*$/;
+        return textAfterAtSymbol === '' || alphanumeric.test(textAfterAtSymbol);
+      };
+
+      if (showSuggestionsCondition()) {
         const tag = textBeforeCursor.slice(lastAtSymbol + 1);
-        setCurrentTag(tag);
-        if (tag.length >= 0) {
-          const suggestions =
-            tag.length > 0
-              ? mockUsers.filter((user) => user.includes(tag))
-              : mockUsers;
-          setFilteredUsers(suggestions);
-          setShowSuggestions(true);
-          const { top, left } = getCursorCoordinates(textBeforeCursor);
-          setDropdownPosition({ top, left });
-        } else {
-          setShowSuggestions(false);
-        }
+
+        const suggestions =
+          tag.length > 0 ? await fetchUsers(tag) : await fetchUsers('');
+        setFilteredUsers(suggestions);
+        setShowSuggestions(true);
+        const { top, left } = getCursorCoordinates(textBeforeCursor);
+        setDropdownPosition({ top, left });
       } else {
         setShowSuggestions(false);
       }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      const textarea = textareaRef.current;
+
       if (showSuggestions) {
         if (e.key === 'ArrowDown') {
           setCursor((prevCursor) =>
             prevCursor < filteredUsers.length - 1 ? prevCursor + 1 : prevCursor
           );
+          console.log('showSuggestions:', showSuggestions);
           e.preventDefault();
         } else if (e.key === 'ArrowUp') {
           setCursor((prevCursor) =>
             prevCursor > 0 ? prevCursor - 1 : prevCursor
           );
+          console.log('showSuggestions:', showSuggestions);
           e.preventDefault();
         } else if (e.key === 'Enter') {
           if (cursor >= 0 && cursor < filteredUsers.length) {
             selectUser(filteredUsers[cursor]);
-            e.preventDefault();
+          } else if (filteredUsers.length > 0) {
+            selectUser(filteredUsers[0]);
           }
+          e.preventDefault();
         } else if (e.key === 'Escape') {
           setShowSuggestions(false);
           e.preventDefault();
         }
       }
+
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        setTimeout(() => {
+          if (textarea) {
+            handleOnChange({
+              target: textarea,
+            } as React.ChangeEvent<HTMLTextAreaElement>);
+          }
+        }, 0);
+      }
     };
 
-    const selectUser = (user: string) => {
+    const selectUser = (user: User) => {
       const textarea = textareaRef.current!;
       const value = textarea.value;
       const cursorPosition = textarea.selectionStart!;
@@ -152,18 +177,27 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 
       const newValue =
         textBeforeCursor.slice(0, lastAtSymbol + 1) +
-        user +
+        user.userName +
         ' ' +
         textAfterCursor;
       textarea.value = newValue;
-      setSelectedTags((prevTags) => [...prevTags, user]);
+
+      const newTaggedUsers = [...taggedUsers, user];
+      setTaggedUsers(newTaggedUsers);
+      if (onTaggedUsersChange) {
+        onTaggedUsersChange(newTaggedUsers);
+      }
+
       setShowSuggestions(false);
-      setCurrentTag('');
       setCursor(-1);
 
-      const newCursorPosition = lastAtSymbol + 1 + user.length + 1;
+      const newCursorPosition = lastAtSymbol + 1 + user.userName.length + 1;
       textarea.setSelectionRange(newCursorPosition, newCursorPosition);
       textarea.focus();
+    };
+
+    const handleClickOnUser = (user: User) => {
+      console.log(user);
     };
 
     const getCursorCoordinates = (text: string) => {
@@ -260,15 +294,17 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             />
             {showSuggestions && (
               <ul
-                className="absolute mt-11 z-[999] bg-white dark:bg-gray-dark-950 border border-gray-light-300 dark:border-gray-dark-700 rounded-md shadow-lg"
+                className="scrollbar scrollbar-thumb-gray-light-200 dark:scrollbar-thumb-gray-dark-700 scrollbar-thumb-rounded-full scrollbar-h-96 scrollbar-w-2 w-48 absolute mt-11 z-[999] bg-white dark:bg-gray-dark-950 rounded-md shadow-lg"
                 style={{
                   top: dropdownPosition.top,
                   left: dropdownPosition.left,
+                  maxHeight: '300px',
+                  overflowY: 'auto',
                 }}
               >
                 {filteredUsers.map((user, index) => (
                   <li
-                    key={user}
+                    key={user.userId}
                     className={`p-2 cursor-pointer pr-10 ${
                       index === cursor
                         ? 'bg-gray-light-200 dark:bg-gray-dark-700'
@@ -276,11 +312,22 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
                     }`}
                     onMouseDown={() => selectUser(user)}
                   >
-                    {user}
+                    {user.userName}
                   </li>
                 ))}
               </ul>
             )}
+          </div>
+          <div className="mt-2">
+            {taggedUsers.map((user) => (
+              <span
+                key={user.userId}
+                className="text-blue-500 cursor-pointer"
+                onClick={() => handleClickOnUser(user)}
+              >
+                @{user.userName}{' '}
+              </span>
+            ))}
           </div>
         </div>
 
