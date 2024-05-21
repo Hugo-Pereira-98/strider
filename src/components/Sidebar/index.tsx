@@ -141,27 +141,18 @@ export function Sidebar() {
                 <li>
                   <SidebarLink
                     openSidebar={isCollapsed}
-                    href="/markets"
+                    href="/feed"
                     icon={Candlestick}
-                    title="Markets"
+                    title="Feed"
                   />
                 </li>
 
                 <li>
                   <SidebarLink
                     openSidebar={isCollapsed}
-                    href="/companies"
+                    href="/profile"
                     icon={Building2}
-                    title="Companies"
-                  />
-                </li>
-
-                <li>
-                  <SidebarLink
-                    href="#"
-                    icon={LineChartUp}
-                    title="Portfolio"
-                    openSidebar={isCollapsed}
+                    title="Profile"
                   />
                 </li>
               </ul>

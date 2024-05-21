@@ -132,15 +132,38 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 
       if (showSuggestions) {
         if (e.key === 'ArrowDown') {
-          setCursor((prevCursor) =>
-            prevCursor < filteredUsers.length - 1 ? prevCursor + 1 : prevCursor
-          );
+          setCursor((prevCursor) => {
+            const newCursor =
+              prevCursor < filteredUsers.length - 1
+                ? prevCursor + 1
+                : prevCursor;
+            setTimeout(() => {
+              const activeItem = document.getElementById(
+                `suggestion-${newCursor}`
+              );
+              activeItem?.scrollIntoView({
+                block: 'nearest',
+                behavior: 'instant',
+              });
+            }, 0);
+            return newCursor;
+          });
           console.log('showSuggestions:', showSuggestions);
           e.preventDefault();
         } else if (e.key === 'ArrowUp') {
-          setCursor((prevCursor) =>
-            prevCursor > 0 ? prevCursor - 1 : prevCursor
-          );
+          setCursor((prevCursor) => {
+            const newCursor = prevCursor > 0 ? prevCursor - 1 : prevCursor;
+            setTimeout(() => {
+              const activeItem = document.getElementById(
+                `suggestion-${newCursor}`
+              );
+              activeItem?.scrollIntoView({
+                block: 'nearest',
+                behavior: 'instant',
+              });
+            }, 0);
+            return newCursor;
+          });
           console.log('showSuggestions:', showSuggestions);
           e.preventDefault();
         } else if (e.key === 'Enter') {
@@ -246,7 +269,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         <div
           ref={hiddenDivRef}
           className="invisible absolute whitespace-pre-wrap p-3"
-          style={{ width: '100%', height: 'auto', visibility: 'hidden' }} // Ensure completely invisible
+          style={{ width: '100%', height: 'auto', visibility: 'hidden' }}
         />
         {labelText && (
           <label className="block body-small-medium text-gray-light-700 dark:text-gray-dark-300 mb-[6px]">
@@ -305,12 +328,14 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
                 {filteredUsers.map((user, index) => (
                   <li
                     key={user.userId}
+                    id={`suggestion-${index}`}
                     className={`p-2 cursor-pointer pr-10 ${
                       index === cursor
                         ? 'bg-gray-light-200 dark:bg-gray-dark-700'
-                        : ''
+                        : 'hover:bg-gray-light-200 dark:hover:bg-gray-dark-700'
                     }`}
                     onMouseDown={() => selectUser(user)}
+                    onMouseEnter={() => setCursor(index)}
                   >
                     {user.userName}
                   </li>

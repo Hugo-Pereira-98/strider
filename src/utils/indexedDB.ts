@@ -1,6 +1,12 @@
 const DB_NAME = 'posterr-db';
 const DB_VERSION = 1;
-import { Post, User, Comment, ThemePreference } from '@/utils/interfaces';
+import {
+  Post,
+  User,
+  Comment,
+  ThemePreference,
+  RetweetFrom,
+} from '@/utils/interfaces';
 
 const STORE_NAMES = {
   users: 'users',
@@ -18,6 +24,46 @@ const inMemoryDB: { [key: string]: any } = {
   [STORE_NAMES.users]: [] as User[],
   [STORE_NAMES.posts]: [] as Post[],
 };
+
+export async function createPost(
+  db: IDBDatabase | typeof inMemoryDB,
+  userId: number,
+  postContent: string,
+  taggedUsers: Pick<User, 'userId' | 'userName' | 'email'>[] = [],
+  retweetFrom: RetweetFrom | null = null
+): Promise<Post> {
+  const newPost: Post = {
+    userId,
+    post: postContent,
+    postDate: new Date(),
+    retweets: [],
+    likes: [],
+    comments: [],
+    tagged: taggedUsers,
+    retweetFrom,
+  };
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.posts], 'readwrite');
+    const store = transaction.objectStore(STORE_NAMES.posts);
+    const request = store.add(newPost);
+
+    request.onsuccess = () => {
+      newPost.id = request.result as number;
+      resolve(newPost);
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB create post error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB create post error: ${(event.target as IDBRequest).error}`
+      );
+    };
+  });
+}
 
 export async function getAllPosts(
   db: IDBDatabase | typeof inMemoryDB,

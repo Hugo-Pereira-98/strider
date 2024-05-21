@@ -6,6 +6,15 @@ import { Close } from '../Icons/Close';
 import { Form } from '../ui/Form';
 import InputField from '../ui/Input';
 import Textarea from '../Textarea';
+import {
+  Post,
+  User,
+  Comment,
+  ThemePreference,
+  RetweetFrom,
+} from '@/utils/interfaces';
+
+import { createPost } from '@/utils/indexedDB';
 
 interface PostModalProps {
   open: boolean;
