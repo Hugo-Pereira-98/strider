@@ -124,7 +124,7 @@ const PostCard: React.FC<PostCardProps> = ({
       <p className="text-gray-light-900 dark:text-white mb-3">{post?.post}</p>
 
       {post.retweetFrom && (
-        <div className="bg-gray-light-25 dark:bg-gray-dark-900 p-3 rounded-md mb-3">
+        <div className="bg-gray-light-100 dark:bg-gray-dark-900 p-3 rounded-md mb-3">
           <div className="flex items-center mb-2">
             <div className="rounded-full h-8 w-8 border border-gray-light-400 dark:border-gray-dark-800 flex items-center justify-center relative">
               <span className="body-small-semiBold text-gray-light-500 dark:text-gray-dark-400">

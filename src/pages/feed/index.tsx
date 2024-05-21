@@ -125,7 +125,7 @@ export default function Feed() {
               className={`px-4 py-2 focus:outline-none ${
                 feedType === 'all'
                   ? 'border-b-2 border-primary-600'
-                  : 'text-gray-light-600 dark:text-gray-dark-400'
+                  : 'border-b-2 border-transparent text-gray-light-600 dark:text-gray-dark-400'
               }`}
               onClick={() => handleToggle('all')}
             >
@@ -135,7 +135,7 @@ export default function Feed() {
               className={`px-4 py-2 focus:outline-none ${
                 feedType === 'following'
                   ? 'border-b-2 border-primary-600'
-                  : 'text-gray-light-600 dark:text-gray-dark-400'
+                  : 'border-b-2 border-transparent text-gray-light-600 dark:text-gray-dark-400'
               }`}
               onClick={() => handleToggle('following')}
             >

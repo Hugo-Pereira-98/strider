@@ -1,10 +1,11 @@
 import { useToast } from '@/hooks/useToast';
 import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { Close } from '../Icons/Close';
 import Button from '../Button';
+import { Close } from '../Icons/Close';
 import { Form } from '../ui/Form';
 import InputField from '../ui/Input';
+import Textarea from '../Textarea';
 
 interface PostModalProps {
   open: boolean;
@@ -67,7 +68,7 @@ export function PostModal({ open, onClose, userId }: PostModalProps) {
 
   return (
     <div
-      className={`flex justify-center items-center fixed inset-0 z-40 px-4 ${
+      className={`flex justify-center items-center fixed inset-0 z-[500] px-4 ${
         open ? 'block' : 'hidden'
       }`}
     >
@@ -88,16 +89,16 @@ export function PostModal({ open, onClose, userId }: PostModalProps) {
         <FormProvider {...methods}>
           <Form onSubmit={handleSubmit(handleCreatePost)} className="mt-8">
             <div className="space-y-4 my-10">
-              <InputField
+              <Textarea
+                style={{
+                  height: '140px',
+                  resize: `none`,
+                }}
                 labelText="Post Content"
                 placeholder="What's on your mind?"
                 feedbackType={errors.content?.message ? 'error' : 'none'}
                 feedback={errors.content?.message}
                 {...register('content', { required: 'Content is required' })}
-              />
-              <InputField
-                labelText="Tag Users"
-                placeholder="Tag users (comma-separated)"
               />
             </div>
 

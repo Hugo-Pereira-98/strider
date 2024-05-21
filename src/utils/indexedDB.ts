@@ -636,6 +636,37 @@ export function addPosts(
   });
 }
 
+export function getUsersFiltered(
+  db: IDBDatabase | typeof inMemoryDB,
+  filter: string
+): Promise<User[]> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.users], 'readonly');
+    const store = transaction.objectStore(STORE_NAMES.users);
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const allUsers = request.result as User[];
+      const filteredUsers = allUsers.filter((user) =>
+        user.userName.toLowerCase().includes(filter.toLowerCase())
+      );
+      resolve(filteredUsers);
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB get users filtered error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB get users filtered error: ${
+          (event.target as IDBRequest).error
+        }`
+      );
+    };
+  });
+}
+
 export function getUsers(db: IDBDatabase | typeof inMemoryDB): Promise<User[]> {
   if (db === inMemoryDB) {
     return Promise.resolve((db as typeof inMemoryDB)[STORE_NAMES.users]);

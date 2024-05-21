@@ -96,7 +96,7 @@ const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
     const handleFocus = () => {
       if (finalState !== 'disabled' && finalState !== 'viewOnly') {
         setIsFocused(true);
-        setIsHovered(false); // Also reset hover state when the input is focused to avoid hover styles
+        setIsHovered(false);
       }
     };
 
@@ -131,8 +131,7 @@ const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
 
     let finalState = state;
     if (disabled) finalState = 'disabled';
-    else if (isFocused)
-      finalState = 'focused'; // Check for focus before isFilled and isHovered
+    else if (isFocused) finalState = 'focused';
     else if (isFilled) finalState = 'filled';
     else if (isHovered) finalState = 'hover';
 
