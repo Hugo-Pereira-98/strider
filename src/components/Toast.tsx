@@ -1,5 +1,4 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { CheckCircle } from './Icons/CheckCircle';
 import { Close } from './Icons/Close';
 import Image from 'next/image';
 

@@ -129,11 +129,6 @@ export function Sidebar() {
           </Link>
         </div>
 
-        <SearchButton
-          isOpen={isCollapsed}
-          setSearchModalOpen={setSearchModalOpen}
-        />
-
         <div className="flex flex-col overflow-y-auto duration-300 ease-linear h-full w-full px-3">
           <nav className="flex flex-col h-full">
             <div className="flex-1">

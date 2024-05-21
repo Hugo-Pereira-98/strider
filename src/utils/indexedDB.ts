@@ -234,11 +234,9 @@ export async function getAllPosts(
         if (
           count >= offset &&
           result.length < limit &&
-          !post.retweetFrom &&
-          post.post.toLowerCase().includes(searchTerm.toLowerCase())
+          (post.post.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            isQuotePost)
         ) {
-          result.push(post);
-        } else if (isQuotePost) {
           result.push(post);
         }
         count++;
@@ -258,6 +256,10 @@ export async function getAllPosts(
       );
     };
   });
+
+  posts.sort(
+    (a, b) => new Date(b.postDate).getTime() - new Date(a.postDate).getTime()
+  );
 
   const postUserPairs: { post: Post; user: User }[] = [];
 

@@ -126,7 +126,7 @@ export default function Feed() {
   return (
     <UserLayout sessions={sessions}>
       <div className="p-4">
-        <div className="sticky top-0 z-10 bg-white dark:bg-gray-dark-950 flex justify-between items-center mb-4">
+        <div className="sticky top-0 z-10 bg-white dark:bg-gray-dark-950 flex justify-between items-center py-4 ">
           <div className="flex space-x-4">
             <button
               className={`px-4 py-2 focus:outline-none ${
