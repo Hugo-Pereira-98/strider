@@ -1,6 +1,5 @@
 import Button from '@/components/Button';
 import { FeaturedIcon } from '@/components/FeaturedIcon';
-import { Atom } from '@/components/Icons/Atom';
 import { Container } from '@/components/ui/Container';
 import { Form } from '@/components/ui/Form';
 import InputField from '@/components/ui/Input';
@@ -11,6 +10,7 @@ import classNames from 'classnames';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { FormProvider, useForm } from 'react-hook-form';
+import { FaTwitter } from 'react-icons/fa';
 import { HiCheck, HiOutlineExclamationCircle } from 'react-icons/hi2';
 import z from 'zod';
 
@@ -120,7 +120,10 @@ export default function SignUp() {
 
       <header className="flex flex-col items-center">
         <FeaturedIcon>
-          <Atom className="fill-gray-light-700 dark:fill-gray-dark-300" />
+          <FaTwitter
+            size={32}
+            className="fill-primary-500 dark:fill-primary-600"
+          />
         </FeaturedIcon>
         <h1 className="heading-extra-small-semibold md:heading-small-semibold text-gray-light-950 dark:text-gray-dark-50 mb-3 mt-6">
           Create an account

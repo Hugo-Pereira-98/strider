@@ -101,7 +101,7 @@ export function useSession(): SessionProps {
       }
     } catch (error) {}
 
-    router.push('/');
+    router.push('/auth/signin');
   }, [router]);
 
   const checkSessionActive = useCallback(async () => {

@@ -1,16 +1,14 @@
-/* eslint-disable @next/next/no-html-link-for-pages */
 import Button from '@/components/Button';
 import { Container } from '@/components/ui/Container';
 import { Form } from '@/components/ui/Form';
 import InputField from '@/components/ui/Input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@apollo/client';
+import { openDB, resetPassword } from '@/utils/indexedDB';
 import Head from 'next/head';
 import Link from 'next/link';
 import { FormProvider, useForm } from 'react-hook-form';
 import { HiArrowRight } from 'react-icons/hi2';
 import * as z from 'zod';
-import { SEND_RESET_PASSWORD_EMAIL } from '../../utils/mutations';
 import Alert from '../../components/ui/Alert';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -18,6 +16,7 @@ import { useToast } from '../../hooks/useToast';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email(),
+  newPassword: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
@@ -25,14 +24,13 @@ type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 export default function ForgotPassword() {
   const router = useRouter();
   const [showAlert, setShowAlert] = useState(false);
-  const [sendResetPasswordEmailMutation] = useMutation(
-    SEND_RESET_PASSWORD_EMAIL
-  );
+
   const { toast } = useToast();
 
   const methods = useForm<ForgotPasswordForm>({
     defaultValues: {
       email: '',
+      newPassword: '',
     },
     resolver: zodResolver(forgotPasswordSchema),
   });
@@ -46,24 +44,19 @@ export default function ForgotPassword() {
   } = methods;
 
   const email = watch('email');
+  const newPassword = watch('newPassword');
 
   const handleForgotPassword = async (values: ForgotPasswordForm) => {
     try {
-      const response = await sendResetPasswordEmailMutation({
-        variables: {
-          email: values.email,
-        },
+      const db = await openDB();
+      await resetPassword(db, values.email, values.newPassword);
+      toast({
+        title: 'Password reset successfully',
+        description: 'You can now log in with your new password',
       });
-
-      if (response.data?.sendResetPasswordEmail) {
-        toast({
-          title: 'Successfully sent reset email',
-          description: 'Please check your email for the reset link',
-        });
-        setTimeout(() => {
-          router.push('/auth/signin');
-        }, 2000);
-      }
+      setTimeout(() => {
+        router.push('/auth/signin');
+      }, 2000);
     } catch (error) {
       setError('email', {
         message: 'Email not found. Please try again.',
@@ -98,12 +91,20 @@ export default function ForgotPassword() {
             feedback={errors.email?.message}
             {...register('email')}
           />
+          <InputField
+            labelText="New Password"
+            placeholder="New Password"
+            feedbackType={errors.newPassword?.message ? 'error' : 'none'}
+            feedback={errors.newPassword?.message}
+            type="password"
+            {...register('newPassword')}
+          />
 
           <Button
             type="submit"
             label="Continue"
             rightIcon={<HiArrowRight className="stroke-2" />}
-            disabled={isSubmitting || !email}
+            disabled={isSubmitting || !email || !newPassword}
             loading={isSubmitting}
           />
         </Form>

@@ -18,6 +18,7 @@ interface PostCardProps {
   sessionUserId: number;
   sessionUserName: string;
   sessionUserEmail: string;
+  hideFollowButton?: boolean;
 }
 
 const PostCard: React.FC<PostCardProps> = ({
@@ -26,6 +27,7 @@ const PostCard: React.FC<PostCardProps> = ({
   sessionUserId,
   sessionUserName,
   sessionUserEmail,
+  hideFollowButton = false,
 }) => {
   const [commentText, setCommentText] = useState<string>('');
   const [showComments, setShowComments] = useState<boolean>(false);
@@ -136,7 +138,7 @@ const PostCard: React.FC<PostCardProps> = ({
           </div>
         </div>
         <div onClick={handleFollowToggle} className="cursor-pointer">
-          {sessionUserId !== user.userId && (
+          {sessionUserId !== user.userId && !hideFollowButton && (
             <Badge
               color={isFollowing ? 'secondary' : 'primary'}
               label={isFollowing ? 'Unfollow' : 'Follow'}

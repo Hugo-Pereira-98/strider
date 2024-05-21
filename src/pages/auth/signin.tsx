@@ -1,7 +1,6 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
-import { FeaturedIcon } from '@/components/FeaturedIcon';
-import { Atom } from '@/components/Icons/Atom';
 import Button from '@/components/Button';
+import { FeaturedIcon } from '@/components/FeaturedIcon';
 import { Container } from '@/components/ui/Container';
 import { Form } from '@/components/ui/Form';
 import InputField from '@/components/ui/Input';
@@ -12,9 +11,10 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { FormProvider, useForm } from 'react-hook-form';
+import { FaTwitter } from 'react-icons/fa';
 import { HiOutlineExclamationCircle } from 'react-icons/hi2';
 import * as z from 'zod';
-import { openDB, getUsers } from '../../utils/indexedDB';
+import { getUsers, openDB } from '../../utils/indexedDB';
 
 const signInSchema = z.object({
   email: z.string().email(),
@@ -80,7 +80,6 @@ export default function SignIn() {
       });
 
       if (response.ok) {
-        toast({ title: 'Signed in successfully' });
         router.push('/feed');
       } else {
         const errorData = await response.json();
@@ -106,7 +105,10 @@ export default function SignIn() {
 
       <header className="flex flex-col items-center">
         <FeaturedIcon>
-          <Atom className="fill-gray-light-700 dark:fill-gray-dark-300" />
+          <FaTwitter
+            size={32}
+            className="fill-primary-500 dark:fill-primary-600"
+          />
         </FeaturedIcon>
         <h1 className="heading-extra-small-semibold md:heading-small-semibold text-gray-light-950 dark:text-gray-dark-50 mb-3 mt-6">
           Sign in to Posterr
@@ -145,6 +147,12 @@ export default function SignIn() {
               className="body-small-semibold text-primary-700 dark:text-gray-dark-300 hover:text-primary-800 dark:hover:text-gray-dark-100"
             >
               Forgot password?
+            </Link>
+            <Link
+              href="/auth/signup"
+              className="body-small-semibold text-primary-700 dark:text-gray-dark-300 hover:text-primary-800 dark:hover:text-gray-dark-100"
+            >
+              Join us!
             </Link>
           </div>
 

@@ -1,17 +1,13 @@
-import classNames from 'classnames';
-import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useSession } from '@/hooks/useSession';
-import { Building2 } from '../Icons/Building2';
-import { Candlestick } from '../Icons/Candlestick';
+import classNames from 'classnames';
+import { FaTwitter } from 'react-icons/fa';
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronRight } from '../Icons/ChevronRight';
-import { LineChartUp } from '../Icons/LineChartUp';
-import { Posterr } from '../Icons/Posterr';
-import { PosterrLogo } from '../Icons/PosterrLogo';
+import { Signal } from '../Icons/Signal';
 import { SearchBarModal } from '../Modal/SearchBarModal';
 import SettingsCard from '../SettingsCard';
-import SearchButton from '../ui/SearchButton';
 import { SidebarLink } from './SidebarLink';
 
 export function Sidebar() {
@@ -117,14 +113,25 @@ export function Sidebar() {
       >
         <div
           className={`flex items-center border-b ${
-            isCollapsed ? 'justify-start' : 'justify-center pl-6'
-          } border-gray-light-200 dark:border-gray-dark-800 px-4 py-2 pt-4 w-full h-[66px] `}
+            isCollapsed ? 'justify-start' : 'justify-center'
+          } border-gray-light-200 dark:border-gray-dark-800 px-2 py-3 w-full h-[66px]`}
         >
           <Link href="/indications">
             {isCollapsed ? (
-              <PosterrLogo className="fill-gray-light-900 dark:fill-white" />
+              <div className="flex items-center">
+                <FaTwitter
+                  size={32}
+                  className="fill-primary-500 dark:fill-primary-600"
+                />
+                <span className="ml-2 text-gray-light-900 dark:text-white body-extra-large-medium">
+                  Posterr
+                </span>
+              </div>
             ) : (
-              <Posterr className="fill-gray-light-900 dark:fill-white" />
+              <FaTwitter
+                size={32}
+                className="fill-primary-500 dark:fill-primary-600"
+              />
             )}
           </Link>
         </div>
@@ -137,17 +144,8 @@ export function Sidebar() {
                   <SidebarLink
                     openSidebar={isCollapsed}
                     href="/feed"
-                    icon={Candlestick}
+                    icon={Signal}
                     title="Feed"
-                  />
-                </li>
-
-                <li>
-                  <SidebarLink
-                    openSidebar={isCollapsed}
-                    href="/profile"
-                    icon={Building2}
-                    title="Profile"
                   />
                 </li>
               </ul>

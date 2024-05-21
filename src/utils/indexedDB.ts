@@ -25,6 +25,57 @@ const inMemoryDB: { [key: string]: any } = {
   [STORE_NAMES.posts]: [] as Post[],
 };
 
+export async function resetPassword(
+  db: IDBDatabase | typeof inMemoryDB,
+  email: string,
+  newPassword: string
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.users], 'readwrite');
+    const store = transaction.objectStore(STORE_NAMES.users);
+    const index = store.index('email');
+    const request = index.get(email);
+
+    request.onsuccess = () => {
+      const user = request.result as User;
+      if (user) {
+        user.password = btoa(newPassword);
+        const updateRequest = store.put(user);
+
+        updateRequest.onsuccess = () => {
+          resolve();
+        };
+
+        updateRequest.onerror = (event: any) => {
+          console.error(
+            'IndexedDB update password error:',
+            (event.target as IDBRequest).error
+          );
+          reject(
+            `IndexedDB update password error: ${
+              (event.target as IDBRequest).error
+            }`
+          );
+        };
+      } else {
+        reject('User not found');
+      }
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB get user by email error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB get user by email error: ${
+          (event.target as IDBRequest).error
+        }`
+      );
+    };
+  });
+}
+
 export async function createPost(
   db: IDBDatabase | typeof inMemoryDB,
   userId: number,
@@ -856,6 +907,45 @@ export function getUsersFiltered(
       );
     };
   });
+}
+
+export async function getUserProfile(
+  db: IDBDatabase | typeof inMemoryDB,
+  userId: number
+): Promise<{ user: User; posts: Post[] }> {
+  const user: User = await getUserById(db, userId);
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const posts: Post[] = await new Promise<Post[]>((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAMES.posts], 'readonly');
+    const store = transaction.objectStore(STORE_NAMES.posts);
+    const index = store.index('userId');
+    const request = index.getAll(userId);
+
+    request.onsuccess = () => {
+      const userPosts = request.result as Post[];
+      userPosts.sort(
+        (a, b) =>
+          new Date(a.postDate).getTime() - new Date(b.postDate).getTime()
+      );
+      resolve(userPosts);
+    };
+
+    request.onerror = (event: any) => {
+      console.error(
+        'IndexedDB get user posts error:',
+        (event.target as IDBRequest).error
+      );
+      reject(
+        `IndexedDB get user posts error: ${(event.target as IDBRequest).error}`
+      );
+    };
+  });
+
+  return { user, posts };
 }
 
 export function getUsers(db: IDBDatabase | typeof inMemoryDB): Promise<User[]> {

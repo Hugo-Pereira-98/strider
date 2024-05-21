@@ -1,16 +1,19 @@
-import { HomeLine } from '@/components/Icons/HomeLine';
+import { useRouter } from 'next/router';
 import { useSession } from '@/hooks/useSession';
 import { UserLayout } from '@/layouts/UserLayout';
 import {
   getAllPosts,
   getPostsFromFollowedUsers,
+  getUsers,
   openDB,
 } from '@/utils/indexedDB';
-import { useRouter } from 'next/router';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Post, User } from '@/utils/interfaces';
 import PostCard from '@/components/PostCard';
-import { PostModal } from '../../components/Modal/NewPostModal';
+import { PostModal } from '@/components/Modal/NewPostModal';
+import { HomeLine } from '@/components/Icons/HomeLine';
+import { UserProfileModal } from '@/components/Modal/UserProfileModal';
+import UserCard from '@/components/UserCard';
 
 const sessions = [
   {
@@ -32,15 +35,33 @@ export default function Feed() {
   const [followingPosts, setFollowingPosts] = useState<
     { post: Post; user: User }[]
   >([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [offset, setOffset] = useState(0);
   const limit = 20;
   const loaderRef = useRef<HTMLDivElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const openUserProfile = useCallback(
+    (userId: number) => {
+      setSelectedUserId(userId);
+      setIsUserProfileModalOpen(true);
+      router.push(`/feed?userId=${userId}`, undefined, { shallow: true });
+    },
+    [router]
+  );
+
+  const closeUserProfileModal = useCallback(() => {
+    setIsUserProfileModalOpen(false);
+    setSelectedUserId(null);
+    router.push('/feed', undefined, { shallow: true });
+  }, [router]);
+
   const toggleModal = () => setIsModalOpen(!isModalOpen);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     const db = await openDB();
     if (feedType === 'all') {
       const newPosts = await getAllPosts(db, offset, limit, searchTerm);
@@ -54,21 +75,27 @@ export default function Feed() {
         searchTerm
       );
       setFollowingPosts((prevPosts) => [...prevPosts, ...newPosts]);
+    } else if (feedType === 'discover') {
+      const newUsers = await getUsers(db);
+      setAllUsers(newUsers);
     }
-  };
+  }, [feedType, offset, limit, searchTerm, session]);
 
   useEffect(() => {
-    const { feed } = router.query;
+    const { feed, userId } = router.query;
     if (feed === 'following') {
       setFeedType('following');
+    } else if (feed === 'discover') {
+      setFeedType('discover');
     } else {
       setFeedType('all');
     }
-  }, [router.query]);
-
-  useEffect(() => {
-    fetchData();
-  }, [feedType, session, offset, searchTerm]);
+    if (userId) {
+      openUserProfile(Number(userId));
+    } else {
+      fetchData();
+    }
+  }, [router.query, session, openUserProfile, fetchData]);
 
   useEffect(() => {
     const handleObserver = (entries: IntersectionObserverEntry[]) => {
@@ -98,8 +125,10 @@ export default function Feed() {
     setOffset(0);
     if (type === 'all') {
       setAllPosts([]);
-    } else {
+    } else if (type === 'following') {
       setFollowingPosts([]);
+    } else if (type === 'discover') {
+      setAllUsers([]);
     }
     router.push(`/feed?feed=${type}`);
   };
@@ -109,7 +138,7 @@ export default function Feed() {
     setOffset(0);
     if (feedType === 'all') {
       setAllPosts([]);
-    } else {
+    } else if (feedType === 'following') {
       setFollowingPosts([]);
     }
   };
@@ -121,12 +150,12 @@ export default function Feed() {
       setFollowingPosts([]);
       fetchData();
     }
-  }, [isModalOpen]);
+  }, [isModalOpen, fetchData]);
 
   return (
     <UserLayout sessions={sessions}>
       <div className="p-4">
-        <div className="sticky top-0 z-10 bg-white dark:bg-gray-dark-950 flex justify-between items-center py-4 ">
+        <div className="sticky top-0 z-10 bg-white dark:bg-gray-dark-950 flex justify-between items-center py-4">
           <div className="flex space-x-4">
             <button
               className={`px-4 py-2 focus:outline-none ${
@@ -148,40 +177,75 @@ export default function Feed() {
             >
               Following
             </button>
-          </div>
-          <div className="flex space-x-4">
-            <input
-              type="text"
-              placeholder="Search posts"
-              value={searchTerm}
-              onChange={handleSearch}
-              className="p-2 border focus:outline-gray-light-25 focus:dark:outline-gray-dark-900 border-gray-light-300 dark:border-gray-dark-700 bg-gray-light-25 dark:bg-gray-dark-800 rounded-md"
-            />
             <button
-              className="px-4 py-2 focus:outline-primary-500 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
-              onClick={toggleModal}
+              className={`px-4 py-2 focus:outline-none ${
+                feedType === 'discover'
+                  ? 'border-b-2 border-primary-600'
+                  : 'border-b-2 border-transparent text-gray-light-600 dark:text-gray-dark-400'
+              }`}
+              onClick={() => handleToggle('discover')}
             >
-              Post
+              Discover
             </button>
           </div>
-        </div>
-        <div className="overflow-y-auto scrollbar scrollbar-thumb-gray-light-200 dark:scrollbar-thumb-gray-dark-700 scrollbar-thumb-rounded-full scrollbar-h-96 scrollbar-w-2">
-          {(feedType === 'all' ? allPosts : followingPosts).map(
-            ({ post, user }) => (
-              <PostCard
-                key={post?.id}
-                post={post}
-                user={user}
-                sessionUserId={session.userId}
-                sessionUserName={session.userName}
-                sessionUserEmail={session.email}
+          {feedType !== 'discover' && (
+            <div className="flex space-x-4">
+              <input
+                type="text"
+                placeholder="Search posts"
+                value={searchTerm}
+                onChange={handleSearch}
+                className="p-2 border focus:outline-gray-light-25 focus:dark:outline-gray-dark-900 border-gray-light-300 dark:border-gray-dark-700 bg-gray-light-25 dark:bg-gray-dark-800 rounded-md"
               />
-            )
+              <button
+                className="px-4 py-2 focus:outline-primary-500 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+                onClick={toggleModal}
+              >
+                Post
+              </button>
+            </div>
           )}
         </div>
+        {feedType === 'discover' ? (
+          <div className="flex justify-center">
+            <div className="flex flex-wrap gap-4 justify-center">
+              {allUsers.map((user) => (
+                <UserCard
+                  key={user.userId}
+                  user={user}
+                  onClick={openUserProfile}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-y-auto scrollbar scrollbar-thumb-gray-light-200 dark:scrollbar-thumb-gray-dark-700 scrollbar-thumb-rounded-full scrollbar-h-96 scrollbar-w-2">
+            {(feedType === 'all' ? allPosts : followingPosts).map(
+              ({ post, user }) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  user={user}
+                  sessionUserId={session.userId}
+                  sessionUserName={session.userName}
+                  sessionUserEmail={session.email}
+                />
+              )
+            )}
+          </div>
+        )}
         <div ref={loaderRef} className="loading" />
       </div>
-
+      {selectedUserId !== null && (
+        <UserProfileModal
+          open={isUserProfileModalOpen}
+          onClose={closeUserProfileModal}
+          userId={selectedUserId}
+          sessionUserId={21}
+          sessionUserName="currentUserUserName"
+          sessionUserEmail="currentUserEmail"
+        />
+      )}
       {isModalOpen && (
         <PostModal
           open={isModalOpen}
