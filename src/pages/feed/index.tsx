@@ -209,28 +209,36 @@ export default function Feed() {
         {feedType === 'discover' ? (
           <div className="flex justify-center">
             <div className="flex flex-wrap gap-4 justify-center">
-              {allUsers.map((user) => (
-                <UserCard
-                  key={user.userId}
-                  user={user}
-                  onClick={openUserProfile}
-                />
-              ))}
+              {allUsers.length > 0 ? (
+                allUsers.map((user) => (
+                  <UserCard
+                    key={user.userId}
+                    user={user}
+                    onClick={openUserProfile}
+                  />
+                ))
+              ) : (
+                <p>No users yet...</p>
+              )}
             </div>
           </div>
         ) : (
           <div className="overflow-y-auto scrollbar scrollbar-thumb-gray-light-200 dark:scrollbar-thumb-gray-dark-700 scrollbar-thumb-rounded-full scrollbar-h-96 scrollbar-w-2">
-            {(feedType === 'all' ? allPosts : followingPosts).map(
-              ({ post, user }) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  user={user}
-                  sessionUserId={session.userId}
-                  sessionUserName={session.userName}
-                  sessionUserEmail={session.email}
-                />
+            {(feedType === 'all' ? allPosts : followingPosts).length > 0 ? (
+              (feedType === 'all' ? allPosts : followingPosts).map(
+                ({ post, user }) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    user={user}
+                    sessionUserId={session.userId}
+                    sessionUserName={session.userName}
+                    sessionUserEmail={session.email}
+                  />
+                )
               )
+            ) : (
+              <p>No posts yet...</p>
             )}
           </div>
         )}
