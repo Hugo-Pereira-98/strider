@@ -234,6 +234,12 @@ export default function Feed() {
                     sessionUserId={session.userId}
                     sessionUserName={session.userName}
                     sessionUserEmail={session.email}
+                    onPostCreated={() => {
+                      setOffset(0);
+                      setAllPosts([]);
+                      setFollowingPosts([]);
+                      fetchData();
+                    }}
                   />
                 )
               )
@@ -259,6 +265,12 @@ export default function Feed() {
           open={isModalOpen}
           userId={session.userId}
           onClose={toggleModal}
+          onPostCreated={() => {
+            setOffset(0);
+            setAllPosts([]);
+            setFollowingPosts([]);
+            fetchData();
+          }}
         />
       )}
     </UserLayout>

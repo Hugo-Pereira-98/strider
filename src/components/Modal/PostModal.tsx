@@ -14,6 +14,7 @@ interface PostModalProps {
   onClose(): void;
   userId: number;
   retweetFrom?: RetweetFrom;
+  onPostCreated?: () => void;
 }
 
 export function PostModal({
@@ -21,6 +22,7 @@ export function PostModal({
   onClose,
   userId,
   retweetFrom,
+  onPostCreated,
 }: PostModalProps) {
   const { toast } = useToast();
   const [taggedUsers, setTaggedUsers] = useState<
@@ -49,7 +51,6 @@ export function PostModal({
 
   const handleCreatePost = async (data: { content: string }) => {
     if (isTagging) {
-      // Prevent form submission if a user is being tagged
       return;
     }
 
@@ -70,6 +71,9 @@ export function PostModal({
         description: 'Your post has been created successfully.',
       });
       onClose();
+      if (onPostCreated) {
+        onPostCreated();
+      }
     } catch (error) {
       console.error('Error creating post:', error);
     }

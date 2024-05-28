@@ -19,6 +19,7 @@ interface PostCardProps {
   sessionUserName: string;
   sessionUserEmail: string;
   hideFollowButton?: boolean;
+  onPostCreated?: () => void;
 }
 
 const PostCard: React.FC<PostCardProps> = ({
@@ -28,6 +29,7 @@ const PostCard: React.FC<PostCardProps> = ({
   sessionUserName,
   sessionUserEmail,
   hideFollowButton = false,
+  onPostCreated,
 }) => {
   const [commentText, setCommentText] = useState<string>('');
   const [showComments, setShowComments] = useState<boolean>(false);
@@ -179,10 +181,12 @@ const PostCard: React.FC<PostCardProps> = ({
 
       <div className="flex space-x-4 text-gray-light-500 dark:text-gray-dark-400 text-sm mb-2">
         <span
-          className={`flex items-center space-x-1 hover:text-green-600 transition-colors cursor-pointer ${
+          className={`flex items-center space-x-1 ${
+            !post?.retweetFrom && 'hover:text-green-600 cursor-pointer'
+          } transition-colors ${
             retweets.includes(sessionUserId) ? 'text-green-600' : ''
           }`}
-          onClick={handleToggleRetweet}
+          onClick={!post?.retweetFrom ? handleToggleRetweet : undefined}
         >
           <FaRetweet />
           <span>{retweets.length}</span>
@@ -270,6 +274,7 @@ const PostCard: React.FC<PostCardProps> = ({
             userName: user.userName,
             email: user.email,
           }}
+          onPostCreated={onPostCreated}
         />
       )}
     </div>
