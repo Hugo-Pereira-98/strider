@@ -25,7 +25,7 @@ export function Toast({
       if (onClose) {
         setTimeout(onClose, 300);
       }
-    }, 5000);
+    }, 3000);
 
     return () => clearTimeout(timeout);
   }, [onClose]);

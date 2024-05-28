@@ -64,7 +64,6 @@ export function PostModal({
         taggedUsers,
         retweetFrom || null
       );
-      console.log('New Post:', newPost);
 
       toast({
         title: 'Post Created',

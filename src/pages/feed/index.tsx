@@ -65,7 +65,15 @@ export default function Feed() {
     const db = await openDB();
     if (feedType === 'all') {
       const newPosts = await getAllPosts(db, offset, limit, searchTerm);
-      setAllPosts((prevPosts) => [...prevPosts, ...newPosts]);
+      console.log('newPosts', newPosts);
+      setAllPosts((prevPosts) => {
+        const mergedPosts = [...prevPosts, ...newPosts];
+        const uniquePosts = mergedPosts.filter(
+          (post, index, self) =>
+            index === self.findIndex((p) => p.post.id === post.post.id)
+        );
+        return uniquePosts;
+      });
     } else if (feedType === 'following' && session) {
       const newPosts = await getPostsFromFollowedUsers(
         db,
@@ -74,7 +82,14 @@ export default function Feed() {
         limit,
         searchTerm
       );
-      setFollowingPosts((prevPosts) => [...prevPosts, ...newPosts]);
+      setFollowingPosts((prevPosts) => {
+        const mergedPosts = [...prevPosts, ...newPosts];
+        const uniquePosts = mergedPosts.filter(
+          (post, index, self) =>
+            index === self.findIndex((p) => p.post.id === post.post.id)
+        );
+        return uniquePosts;
+      });
     } else if (feedType === 'discover') {
       const newUsers = await getUsers(db);
       setAllUsers(newUsers);
@@ -93,6 +108,9 @@ export default function Feed() {
     if (userId) {
       openUserProfile(Number(userId));
     } else {
+      setOffset(0); // Reset offset when the query changes
+      setAllPosts([]);
+      setFollowingPosts([]);
       fetchData();
     }
   }, [router.query, session, openUserProfile, fetchData]);
