@@ -11,10 +11,6 @@ export function PrivateLayout({ children }: PrivateLayoutProps) {
 
   useEffect(() => {
     const idCookie = getCookie('posterr-id');
-
-    if (!idCookie && !router.pathname.startsWith('/auth')) {
-      router.push('/auth/signin');
-    }
   }, [router]);
 
   return <>{children}</>;

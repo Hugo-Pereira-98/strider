@@ -1,38 +1,14 @@
-import { AlignLeft } from '@/components/Icons/AlignLeft';
 import { Sidebar } from '@/components/Sidebar';
-import Breadcrumbs from '@/components/ui/Breadcrumbs';
-import { SelectDown } from '@/components/ui/SelectDown';
-import classNames from 'classnames';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
 import { ReactNode } from 'react';
 import { useSidebar } from '../contexts/SidebarContext';
-import { FaTwitter } from 'react-icons/fa';
+import Link from 'next/link';
+import { AlignLeft } from '../components/Icons/AlignLeft';
 
 interface UserLayoutProps {
-  menuItems?: {
-    url: string;
-    text: string;
-  }[];
-  sessions: {
-    text: string;
-    icon?: any;
-    route?: string;
-  }[];
   children: ReactNode;
-  useBorder?: boolean | undefined;
-  useHeader?: boolean | undefined;
 }
 
-export function UserLayout({
-  menuItems,
-  sessions,
-  children,
-  useBorder = true,
-  useHeader = true,
-}: UserLayoutProps) {
-  const router = useRouter();
-
+export function UserLayout({ children }: UserLayoutProps) {
   const { sidebarOpen, setSidebarOpen } = useSidebar();
 
   return (
@@ -40,84 +16,28 @@ export function UserLayout({
       <Sidebar />
 
       <div className="relative flex flex-1 flex-col 2xl:items-center">
-        <div className="2xl:hidden border-b border-gray-light-200 dark:border-gray-dark-800 pb-4 flex items-center justify-between p-6 sm:p-8">
-          <div className="flex items-center">
-            <FaTwitter
-              size={32}
-              className="fill-primary-500 dark:fill-primary-600"
-            />
-            <span className="ml-2 text-gray-light-900 dark:text-white body-extra-large-medium">
-              Posterr
-            </span>
-          </div>
-          <button type="button" onClick={() => setSidebarOpen(true)}>
+        <div className="h-16 2xl:hidden border-b border-gray-light-200 dark:border-gray-dark-800 pb-4 flex items-center justify-between p-6 sm:p-8">
+          <Link href="/indications" passHref>
+            <div className="w-6 h-6 bg-purple-950 text-center">C</div>
+          </Link>
+
+          <button type="button" onClick={() => setSidebarOpen(!sidebarOpen)}>
             <AlignLeft className="stroke-gray-light-700 dark:stroke-gray-dark-300" />
           </button>
         </div>
 
         <div className="w-full 2xl:w-[calc(100vw-224px)] 2xl:max-w-[1280px]">
-          {useHeader && (
-            <div className="px-6 pt-6 sm:px-8 sm:pt-8 ">
-              <Breadcrumbs
-                type="textIcon"
-                textPosition="rightIcon"
-                sessions={sessions}
-                separator="arrow"
-              />
-
-              {menuItems && (
-                <>
-                  <div
-                    className={classNames(
-                      'hidden h-8 sm:flex items-center gap-2',
-                      {
-                        'border-b border-gray-light-200 dark:border-gray-dark-800':
-                          useBorder,
-                      }
-                    )}
-                  >
-                    {menuItems.map((menuItem) => (
-                      <div key={menuItem.url} className="relative">
-                        <Link
-                          href={menuItem.url}
-                          className={classNames(
-                            'font-bold',
-                            {
-                              'text-primary-700 dark:text-gray-dark-300':
-                                router.asPath === menuItem.url,
-                              'text-gray-light-500 dark:text-gray-dark-400':
-                                router.asPath !== menuItem.url,
-                              'border-b-2 border-primary-700 dark:border-gray-dark-300':
-                                router.asPath === menuItem.url && useBorder,
-                              'bg-[#F9F5FF] dark:bg-gray-dark-800 rounded-sm':
-                                router.asPath === menuItem.url && !useBorder,
-                            },
-                            'body-small-semibold',
-                            { 'block h-8 border-spacing-1 px-1': useBorder },
-                            { 'flex items-center px-3 h-10': !useBorder }
-                          )}
-                        >
-                          {menuItem.text}
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="sm:hidden">
-                    <SelectDown menuItems={menuItems} />
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-          <main className={classNames('5xl:max-w-[75rem] 5xl:mx-auto')}>
-            <div className="animate-fadeIn">{children}</div>
+          <main>
+            <div>{children}</div>
           </main>
         </div>
       </div>
 
       {sidebarOpen && (
-        <div className="fixed inset-0" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="fixed inset-0"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        />
       )}
     </div>
   );

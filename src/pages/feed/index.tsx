@@ -171,7 +171,7 @@ export default function Feed() {
   }, [isModalOpen, fetchData]);
 
   return (
-    <UserLayout sessions={sessions}>
+    <UserLayout>
       <div className="p-4">
         <div className="sticky top-0 z-10 bg-white dark:bg-gray-dark-950 flex flex-col md:flex-row justify-between items-center py-4">
           <div className="flex space-x-4">
